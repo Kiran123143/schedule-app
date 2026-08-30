@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>My Schedule Companion</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header with Live Clock -->
+    <header class="app-header">
+      <div class="header-info">
+        <span class="day-badge" id="current-day-name">MONDAY</span>
+        <h1 class="clock-display" id="live-clock">00:00:00</h1>
+      </div>
+      <div class="header-status">
+        <span class="status-dot"></span> Live Engine
+      </div>
+    </header>
+
+    <!-- Active Task Banner (NOW PLAYING) -->
+    <section class="now-banner">
+      <div class="banner-label">
+        <span class="pulse-icon">🔴</span> HAPPENING NOW
+      </div>
+      <div class="now-content">
+        <div class="now-icon-box" id="now-icon">💤</div>
+        <div class="now-details">
+          <h2 id="now-title">Sleep & Recovery</h2>
+          <p id="now-time-range">12:00 AM - 05:00 AM</p>
+          <span class="now-desc" id="now-desc">Rest and recovery</span>
+        </div>
+      </div>
+      <div class="progress-section">
+        <div class="progress-info">
+          <span id="countdown-label">Time Remaining</span>
+          <span class="countdown-timer" id="countdown-timer">00h 00m 00s</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Up Next Card -->
+    <section class="next-card">
+      <div class="next-header">
+        <span class="next-tag">UP NEXT</span>
+        <span class="next-start-time" id="next-start-time">05:00 AM</span>
+      </div>
+      <div class="next-body">
+        <span class="next-icon" id="next-icon">🌅</span>
+        <div class="next-text">
+          <h3 id="next-title">Wake Up & Hydrate</h3>
+          <p id="next-desc">Hydration & mental preparation</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Day Selector Tabs -->
+    <section class="day-navigation">
+      <div class="tabs-scroll" id="day-tabs">
+        <button class="day-tab" data-day="monday">Mon</button>
+        <button class="day-tab" data-day="tuesday">Tue</button>
+        <button class="day-tab" data-day="wednesday">Wed</button>
+        <button class="day-tab" data-day="thursday">Thu</button>
+        <button class="day-tab" data-day="friday">Fri</button>
+        <button class="day-tab" data-day="saturday">Sat</button>
+        <button class="day-tab" data-day="sunday">Sun</button>
+      </div>
+    </section>
+
+    <!-- Daily Task Completion Summary Counter -->
+    <section class="daily-summary-bar">
+      <div class="summary-item stat-done">
+        <span class="summary-count" id="stat-done-count">0</span>
+        <span class="summary-label">✓ Done</span>
+      </div>
+      <div class="summary-item stat-missed">
+        <span class="summary-count" id="stat-missed-count">0</span>
+        <span class="summary-label">✕ Missed</span>
+      </div>
+      <div class="summary-item stat-pending">
+        <span class="summary-count" id="stat-pending-count">0</span>
+        <span class="summary-label">⏳ Pending</span>
+      </div>
+    </section>
+
+    <!-- Timeline Schedule List -->
+    <main class="timeline-section">
+      <div class="timeline-header">
+        <h3 id="timeline-title">Monday Routine</h3>
+        <span class="task-count" id="task-count">16 Tasks</span>
+      </div>
+      <div class="timeline-list" id="timeline-list">
+        <!-- Dynamic Task Cards Render Here -->
+      </div>
+    </main>
+  </div>
+
+  <script src="schedule.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
