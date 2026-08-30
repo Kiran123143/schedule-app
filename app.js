@@ -1,14 +1,24 @@
 /**
- * Mobile Schedule Companion - App Engine with Interactive Status Tracking & LocalStorage
+ * Mobile Schedule Companion - App Engine with Audio Beep Notifications
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const DAYS_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   let selectedDay = getCurrentDayKey();
   
+  // Audio Engine State
+  let audioCtx = null;
+  let isAudioEnabled = localStorage.getItem('schedule_audio_enabled') === 'true';
+  let lastActiveTaskIndex = -1;
+  let lastTransitionTime = 0;
+  let lastReminderBeepTime = 0;
+
   // DOM Elements
   const liveClockEl = document.getElementById('live-clock');
   const currentDayNameEl = document.getElementById('current-day-name');
+  const audioToggleBtn = document.getElementById('audio-toggle-btn');
+  const audioIconEl = document.getElementById('audio-icon');
+  const audioStatusEl = document.getElementById('audio-status');
   
   const nowIconEl = document.getElementById('now-icon');
   const nowTitleEl = document.getElementById('now-title');
@@ -31,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const timelineListEl = document.getElementById('timeline-list');
   const dayTabs = document.querySelectorAll('.day-tab');
 
-  // Initialize App
+  // Initialize App & Controls
+  initAudioToggle();
   initTabs();
   renderTimeline(selectedDay);
   updateEngine();
@@ -43,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getStorageKey(taskId) {
-    // Unique key based on today's date & task ID
     const todayStr = new Date().toISOString().split('T')[0];
     return `task_status_${todayStr}_${taskId}`;
   }
@@ -55,12 +65,79 @@ document.addEventListener('DOMContentLoaded', () => {
   function setTaskStatus(taskId, status) {
     const currentStatus = getTaskStatus(taskId);
     if (currentStatus === status) {
-      // Toggle back to pending if clicked again
       localStorage.removeItem(getStorageKey(taskId));
     } else {
       localStorage.setItem(getStorageKey(taskId), status);
     }
     renderTimeline(selectedDay);
+  }
+
+  /* Audio Synthesizer using Web Audio API */
+  function initAudioContext() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playTone(freq, type, duration, delay = 0) {
+    if (!isAudioEnabled || !audioCtx) return;
+    setTimeout(() => {
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.error('Audio play error', e);
+      }
+    }, delay * 1000);
+  }
+
+  function playTransitionChime() {
+    // 2-tone pleasant transition alert chime
+    playTone(880, 'sine', 0.25, 0);    // A5
+    playTone(1046.5, 'sine', 0.35, 0.2); // C6
+  }
+
+  function playReminderBeep() {
+    // Gentle 1-minute transition reminder tone
+    playTone(659.25, 'sine', 0.2, 0);  // E5
+  }
+
+  function initAudioToggle() {
+    updateAudioUI();
+    audioToggleBtn.addEventListener('click', () => {
+      initAudioContext();
+      isAudioEnabled = !isAudioEnabled;
+      localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
+      updateAudioUI();
+      if (isAudioEnabled) {
+        playTransitionChime(); // Play test chime
+      }
+    });
+  }
+
+  function updateAudioUI() {
+    if (isAudioEnabled) {
+      audioToggleBtn.classList.add('audio-active');
+      audioIconEl.textContent = '🔔';
+      audioStatusEl.textContent = 'Sound On';
+    } else {
+      audioToggleBtn.classList.remove('audio-active');
+      audioIconEl.textContent = '🔇';
+      audioStatusEl.textContent = 'Sound Off';
+    }
   }
 
   function initTabs() {
@@ -71,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       tab.addEventListener('click', () => {
+        initAudioContext(); // Ensure AudioContext resumes on touch/tap
         dayTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         selectedDay = dayKey;
@@ -83,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateEngine() {
     const now = new Date();
     const currentDayKey = DAYS_MAP[now.getDay()];
+    const nowTimestamp = now.getTime();
     
     // Update Header Clock
     const hours = String(now.getHours()).padStart(2, '0');
@@ -91,10 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
     liveClockEl.textContent = `${hours}:${minutes}:${seconds}`;
     currentDayNameEl.textContent = currentDayKey.toUpperCase();
 
-    // Calculate current seconds from midnight
+    // Seconds from midnight
     const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
-    // Get today's schedule
     const todayTasks = SCHEDULE_DATA[currentDayKey] || [];
     let currentTaskIndex = -1;
 
@@ -109,7 +187,29 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Check Task Transition for Audio Alerts
     if (currentTaskIndex !== -1) {
+      if (lastActiveTaskIndex !== -1 && lastActiveTaskIndex !== currentTaskIndex) {
+        // Task Transition Triggered!
+        lastTransitionTime = nowTimestamp;
+        lastReminderBeepTime = nowTimestamp;
+        playTransitionChime();
+      }
+      
+      // Handle 1-Minute Transition Reminder Beeps (Beep every 20s for the 1st minute)
+      if (lastTransitionTime > 0) {
+        const elapsedSinceTransitionSec = (nowTimestamp - lastTransitionTime) / 1000;
+        if (elapsedSinceTransitionSec <= 60) {
+          const elapsedSinceLastBeepSec = (nowTimestamp - lastReminderBeepTime) / 1000;
+          if (elapsedSinceLastBeepSec >= 20) {
+            playReminderBeep();
+            lastReminderBeepTime = nowTimestamp;
+          }
+        }
+      }
+
+      lastActiveTaskIndex = currentTaskIndex;
+
       const activeTask = todayTasks[currentTaskIndex];
       const nextTask = todayTasks[(currentTaskIndex + 1) % todayTasks.length];
 
@@ -139,7 +239,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Refresh active highlights if viewing today's tab
     if (selectedDay === currentDayKey) {
       highlightActiveTaskInList(currentTaskIndex);
     }
@@ -210,24 +309,24 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      // Event listeners for action buttons
       const btnDone = card.querySelector('.btn-done');
       const btnMissed = card.querySelector('.btn-missed');
 
       btnDone.addEventListener('click', (e) => {
         e.stopPropagation();
+        initAudioContext();
         setTaskStatus(task.id, 'completed');
       });
 
       btnMissed.addEventListener('click', (e) => {
         e.stopPropagation();
+        initAudioContext();
         setTaskStatus(task.id, 'incomplete');
       });
 
       timelineListEl.appendChild(card);
     });
 
-    // Update Daily Stats Counter
     statDoneCountEl.textContent = doneCount;
     statMissedCountEl.textContent = missedCount;
     statPendingCountEl.textContent = pendingCount;
