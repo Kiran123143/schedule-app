@@ -1,7 +1,7 @@
 /**
  * Master Schedule Data Structure
  * Contains full 24-hour schedule data for Monday through Sunday.
- * Updated: 1-hour post-college afternoon nap on weekdays; 2-hour pencil sketching on weekends.
+ * Updated: Saturday PRISM class used for Selenium Java Automation; 1-hour post-college afternoon nap on weekdays & Saturday.
  */
 
 const SCHEDULE_DATA = {
@@ -98,16 +98,17 @@ const SCHEDULE_DATA = {
     { id: "sat-3", start: "05:15", end: "06:45", title: "Exercise Session", category: "exercise", icon: "🏋️", desc: "1.5 Hours physical training" },
     { id: "sat-4", start: "06:45", end: "07:00", title: "Transition Break", category: "break", icon: "☕", desc: "Short rest" },
     { id: "sat-5", start: "07:00", end: "08:00", title: "Book Reading", category: "reading", icon: "📚", desc: "Daily reading habit" },
-    { id: "sat-6", start: "08:00", end: "10:00", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing study" },
+    { id: "sat-6", start: "08:00", end: "10:00", title: "BCA Study: Research Methods", category: "study", icon: "📖", desc: "RM Study & documentation" },
     { id: "sat-7", start: "10:00", end: "10:30", title: "Breakfast & Prep", category: "break", icon: "🍱", desc: "Breakfast & college prep" },
     { id: "sat-8", start: "10:30", end: "11:00", title: "Travel to College", category: "travel", icon: "🚶", desc: "Commute to college" },
-    { id: "sat-9", start: "11:00", end: "12:50", title: "College Class: PRISM", category: "college", icon: "🎓", desc: "PRISM session" },
+    { id: "sat-9", start: "11:00", end: "12:50", title: "PRISM: Selenium Java", category: "study", icon: "⚡", desc: "Self Development Class: Selenium Java Practice" },
     { id: "sat-10", start: "12:50", end: "13:20", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
-    { id: "sat-11", start: "13:20", end: "13:40", title: "Lunch Break", category: "break", icon: "🍱", desc: "Lunch break" },
-    { id: "sat-12", start: "13:40", end: "15:40", title: "BCA Study: Research Methods", category: "study", icon: "📖", desc: "RM Study & documentation" },
-    { id: "sat-13", start: "15:40", end: "16:00", title: "Tea & Refresh Break", category: "break", icon: "☕", desc: "Pre-work shift break" },
-    { id: "sat-14", start: "16:00", end: "23:00", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - ₹1K–1.2K)" },
-    { id: "sat-15", start: "23:00", end: "23:59", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" }
+    { id: "sat-11", start: "13:20", end: "14:20", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
+    { id: "sat-12", start: "14:20", end: "14:40", title: "Lunch Break", category: "break", icon: "🍱", desc: "Lunch break" },
+    { id: "sat-13", start: "14:40", end: "15:40", title: "BCA Study & Prep", category: "study", icon: "📖", desc: "Study recap & pre-shift prep" },
+    { id: "sat-14", start: "15:40", end: "16:00", title: "Tea & Refresh Break", category: "break", icon: "☕", desc: "Pre-work shift break" },
+    { id: "sat-15", start: "16:00", end: "23:00", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - ₹1K–1.2K)" },
+    { id: "sat-16", start: "23:00", end: "23:59", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" }
   ],
   sunday: [
     { id: "sun-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
