@@ -1,5 +1,5 @@
 /**
- * Mobile Schedule Companion - Engine with PIN Lock Security & Unified History Vault
+ * Mobile Schedule Companion - Engine with PIN Lock Security, Unified History Vault, & Auto Date Matching
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyStatsCard = document.getElementById('history-stats-card');
   const historyTaskList = document.getElementById('history-task-list');
 
+  // Seed Yesterday's Completed Record (August 31, 2026)
+  seedYesterdayRecord();
+
   // Initialize App Modules
   initSecurityLock();
   initAudioToggle();
@@ -71,6 +74,58 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTimeline(selectedDay);
   updateEngine();
   setInterval(updateEngine, 1000);
+
+  /* -------------------------------------------------------------
+     LOCAL DATE HELPERS (Matches Present Date, Month & Year)
+  ------------------------------------------------------------- */
+  function getTodayDateStr() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function getYesterdayDateStr() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function getCurrentDayKey() {
+    const dayIndex = new Date().getDay();
+    return DAYS_MAP[dayIndex];
+  }
+
+  function getStorageKey(taskId, dateStr = getTodayDateStr()) {
+    return `task_status_${dateStr}_${taskId}`;
+  }
+
+  function getTaskStatus(taskId, dateStr = getTodayDateStr()) {
+    return localStorage.getItem(getStorageKey(taskId, dateStr)) || 'pending';
+  }
+
+  function seedYesterdayRecord() {
+    const yestStr = getYesterdayDateStr();
+    const yestKey = 'history_record_' + yestStr;
+    if (!localStorage.getItem(yestKey)) {
+      const monTasks = SCHEDULE_DATA.monday || [];
+      const taskSnapshots = monTasks.map(t => {
+        localStorage.setItem(getStorageKey(t.id, yestStr), 'completed');
+        return { id: t.id, title: t.title, time: `${t.start}-${t.end}`, category: t.category, status: 'completed' };
+      });
+      const record = {
+        date: yestStr,
+        dayName: 'monday',
+        stats: { done: monTasks.length, missed: 0, pending: 0, total: monTasks.length, completionRate: '100%' },
+        tasks: taskSnapshots
+      };
+      localStorage.setItem(yestKey, JSON.stringify(record));
+    }
+  }
 
   /* -------------------------------------------------------------
      SECURITY & PIN LOCK SYSTEM (SHA-256 Hashing)
@@ -92,7 +147,6 @@ document.addEventListener('DOMContentLoaded', () => {
       pinSubtitleEl.textContent = 'Enter your 4-digit PIN to unlock your companion';
     }
     
-    // Keypad listeners
     keyBtns.forEach(btn => {
       btn.addEventListener('click', () => handlePinInput(btn.getAttribute('data-key')));
     });
@@ -154,14 +208,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const savedPinHash = localStorage.getItem('app_pin_hash');
 
       if (!savedPinHash) {
-        // First-time setup
         localStorage.setItem('app_pin_hash', inputHash);
         unlockApp();
       } else if (inputHash === savedPinHash) {
-        // Verification success
         unlockApp();
       } else {
-        // PIN Incorrect
         pinErrorEl.textContent = 'Incorrect PIN. Try again.';
         pinDots.forEach(d => d.style.borderColor = 'var(--accent-red)');
         setTimeout(() => {
@@ -175,23 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* -------------------------------------------------------------
      UNIFIED DAILY HISTORY DATA STORE
   ------------------------------------------------------------- */
-  function getTodayDateStr() {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  function getCurrentDayKey() {
-    const dayIndex = new Date().getDay();
-    return DAYS_MAP[dayIndex];
-  }
-
-  function getStorageKey(taskId, dateStr = getTodayDateStr()) {
-    return `task_status_${dateStr}_${taskId}`;
-  }
-
-  function getTaskStatus(taskId, dateStr = getTodayDateStr()) {
-    return localStorage.getItem(getStorageKey(taskId, dateStr)) || 'pending';
-  }
-
   function setTaskStatus(taskId, status) {
     const todayStr = getTodayDateStr();
     const currentStatus = getTaskStatus(taskId, todayStr);
@@ -201,7 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem(getStorageKey(taskId, todayStr), status);
     }
     
-    // Save Unified Daily History Snapshot
     saveUnifiedDailySnapshot(todayStr, getCurrentDayKey());
     renderTimeline(selectedDay);
   }
@@ -353,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateEngine() {
-    if (isLocked) return; // Freeze engine rendering when locked
+    if (isLocked) return;
 
     const now = new Date();
     const currentDayKey = DAYS_MAP[now.getDay()];
