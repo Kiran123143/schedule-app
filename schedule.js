@@ -1,7 +1,7 @@
 /**
  * Master Schedule Data Structure
  * Contains full 24-hour schedule data for Monday through Sunday.
- * Updated Saturday: Includes 7h Sleep, 7h Rapido (16:00-23:00), and 2h Pencil Sketching Hobby (23:00-23:59).
+ * Updated Sunday: 7 Hours Sleep, 1 Hour Power Nap, Dedicated Play Time / Recreation, No Selenium/BCA studies.
  */
 
 const SCHEDULE_DATA = {
@@ -109,18 +109,17 @@ const SCHEDULE_DATA = {
     { id: "sat-14", start: "23:00", end: "23:59", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" }
   ],
   sunday: [
-    { id: "sun-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
-    { id: "sun-2", start: "05:00", end: "05:15", title: "Wake Up & Hydrate", category: "routine", icon: "🌅", desc: "Morning hydration" },
-    { id: "sun-3", start: "05:15", end: "06:45", title: "Exercise Session", category: "exercise", icon: "🏋️", desc: "1.5 Hours physical training" },
-    { id: "sun-4", start: "06:45", end: "07:15", title: "Bathing & Hygiene", category: "routine", icon: "🧼", desc: "Alternate day bathing" },
-    { id: "sun-5", start: "07:15", end: "08:15", title: "Book Reading", category: "reading", icon: "📚", desc: "Daily reading habit" },
-    { id: "sun-6", start: "08:15", end: "08:30", title: "Breakfast Break", category: "break", icon: "☕", desc: "Breakfast & refresh" },
-    { id: "sun-7", start: "08:30", end: "10:30", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing project practice" },
-    { id: "sun-8", start: "10:30", end: "10:45", title: "Transition Break", category: "break", icon: "☕", desc: "Short rest break" },
-    { id: "sun-9", start: "10:45", end: "12:45", title: "BCA Study: Lab Review", category: "study", icon: "📖", desc: "Weekly practical & lab revision" },
-    { id: "sun-10", start: "12:45", end: "13:15", title: "Lunch & Rest Break", category: "break", icon: "🍱", desc: "Lunch and relaxation" },
-    { id: "sun-11", start: "13:15", end: "20:15", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - ₹1K–1.2K)" },
-    { id: "sun-12", start: "20:15", end: "22:15", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" },
-    { id: "sun-13", start: "22:15", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Relaxation & early sleep prep" }
+    { id: "sun-1", start: "00:00", end: "07:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest & Recovery (7 Hours)" },
+    { id: "sun-2", start: "07:00", end: "07:15", title: "Wake Up & Hydrate", category: "routine", icon: "🌅", desc: "Morning hydration" },
+    { id: "sun-3", start: "07:15", end: "08:45", title: "Exercise Session", category: "exercise", icon: "🏋️", desc: "1.5 Hours physical training" },
+    { id: "sun-4", start: "08:45", end: "09:15", title: "Bathing & Hygiene", category: "routine", icon: "🧼", desc: "Alternate day bathing" },
+    { id: "sun-5", start: "09:15", end: "10:15", title: "Book Reading", category: "reading", icon: "📚", desc: "Daily reading habit" },
+    { id: "sun-6", start: "10:15", end: "10:45", title: "Breakfast Break", category: "break", icon: "☕", desc: "Breakfast & relax" },
+    { id: "sun-7", start: "10:45", end: "12:15", title: "Play Time & Recreation", category: "break", icon: "🎮", desc: "Dedicated sports, games & recreation time" },
+    { id: "sun-8", start: "12:15", end: "13:15", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Afternoon Nap & Rest" },
+    { id: "sun-9", start: "13:15", end: "20:15", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - Target ₹1K–1.2K)" },
+    { id: "sun-10", start: "20:15", end: "20:45", title: "Dinner & Refresh", category: "break", icon: "🍱", desc: "Dinner break" },
+    { id: "sun-11", start: "20:45", end: "22:45", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" },
+    { id: "sun-12", start: "22:45", end: "23:59", title: "Wind Down & Sleep Prep", category: "routine", icon: "🌌", desc: "Rest & night wind down" }
   ]
 };
