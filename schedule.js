@@ -1,7 +1,7 @@
 /**
  * Master Schedule Data Structure
  * Contains full 24-hour schedule data for Monday through Sunday.
- * Each task item has a unique ID for persistent tracking.
+ * Updated: 1-hour post-college afternoon nap on weekdays; 2-hour pencil sketching on weekends.
  */
 
 const SCHEDULE_DATA = {
@@ -15,30 +15,29 @@ const SCHEDULE_DATA = {
     { id: "mon-7", start: "08:30", end: "09:00", title: "Travel to College", category: "travel", icon: "🚶", desc: "Commute to Kristu Jayanti" },
     { id: "mon-8", start: "09:00", end: "12:50", title: "College Classes", category: "college", icon: "🎓", desc: "Cloud, Python, RM, Library" },
     { id: "mon-9", start: "12:50", end: "13:20", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
-    { id: "mon-10", start: "13:20", end: "13:40", title: "Lunch & Rest Break", category: "break", icon: "🍱", desc: "Lunch and short rest" },
-    { id: "mon-11", start: "13:40", end: "15:40", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
-    { id: "mon-12", start: "15:40", end: "16:00", title: "Tea & Refresh Break", category: "break", icon: "☕", desc: "Short break" },
-    { id: "mon-13", start: "16:00", end: "18:00", title: "BCA Study: Python Theory", category: "study", icon: "📖", desc: "Core Python concepts & syntax" },
+    { id: "mon-10", start: "13:20", end: "14:20", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
+    { id: "mon-11", start: "14:20", end: "14:40", title: "Lunch & Refresh", category: "break", icon: "🍱", desc: "Lunch & transition break" },
+    { id: "mon-12", start: "14:40", end: "16:40", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
+    { id: "mon-13", start: "16:40", end: "18:00", title: "BCA Study: Python Theory", category: "study", icon: "📖", desc: "Core Python concepts & syntax" },
     { id: "mon-14", start: "18:00", end: "23:00", title: "Rapido Work Shift", category: "rapido", icon: "🛵", desc: "Evening shift (Target ₹620 min)" },
-    { id: "mon-15", start: "23:00", end: "23:45", title: "Sketching Hobby", category: "hobby", icon: "🎨", desc: "Creative art session" },
-    { id: "mon-16", start: "23:45", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
+    { id: "mon-15", start: "23:00", end: "23:40", title: "BCA Study: Python Revision", category: "study", icon: "📖", desc: "Evening study recap" },
+    { id: "mon-16", start: "23:40", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
   ],
   tuesday: [
     { id: "tue-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
     { id: "tue-2", start: "05:00", end: "05:15", title: "Wake Up & Hydrate", category: "routine", icon: "🌅", desc: "Morning hydration" },
-    { id: "tue-3", start: "05:15", end: "06:00", title: "Book Reading (Part 1)", category: "reading", icon: "📚", desc: "Reading habit session" },
+    { id: "tue-3", start: "05:15", end: "06:00", title: "Book Reading", category: "reading", icon: "📚", desc: "Reading habit session" },
     { id: "tue-4", start: "06:00", end: "08:00", title: "Rapido Morning Shift", category: "rapido", icon: "🛵", desc: "Peak morning surge (2 hrs)" },
     { id: "tue-5", start: "08:00", end: "09:30", title: "Exercise Session", category: "exercise", icon: "🏋️", desc: "1.5 Hours physical training" },
-    { id: "tue-6", start: "09:30", end: "10:15", title: "Freshen Up & Breakfast", category: "break", icon: "🍱", desc: "Reading Part 2 & Breakfast" },
+    { id: "tue-6", start: "09:30", end: "10:15", title: "Freshen Up & Breakfast", category: "break", icon: "🍱", desc: "Freshen up & Breakfast" },
     { id: "tue-7", start: "10:15", end: "10:30", title: "College Prep", category: "break", icon: "☕", desc: "Transition & prep" },
     { id: "tue-8", start: "10:30", end: "11:00", title: "Travel to College", category: "travel", icon: "🚶", desc: "Commute to college" },
     { id: "tue-9", start: "11:00", end: "16:30", title: "College Classes & Lab", category: "college", icon: "🎓", desc: "DWM Lab, Python, DMW, RM" },
     { id: "tue-10", start: "16:30", end: "17:00", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
-    { id: "tue-11", start: "17:00", end: "20:00", title: "Rapido Evening Shift", category: "rapido", icon: "🛵", desc: "Peak evening surge (3 hrs - Total 5h)" },
-    { id: "tue-12", start: "20:00", end: "22:00", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
-    { id: "tue-13", start: "22:00", end: "23:00", title: "BCA Study: Python Practicals", category: "study", icon: "📖", desc: "Python coding lab exercises" },
-    { id: "tue-14", start: "23:00", end: "23:45", title: "Sketching Hobby", category: "hobby", icon: "🎨", desc: "Creative art session" },
-    { id: "tue-15", start: "23:45", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
+    { id: "tue-11", start: "17:00", end: "18:00", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
+    { id: "tue-12", start: "18:00", end: "21:00", title: "Rapido Evening Shift", category: "rapido", icon: "🛵", desc: "Peak evening surge (3 hrs - Total 5h)" },
+    { id: "tue-13", start: "21:00", end: "23:00", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
+    { id: "tue-14", start: "23:00", end: "23:59", title: "BCA Study: Python Practicals", category: "study", icon: "📖", desc: "Python coding lab exercises" }
   ],
   wednesday: [
     { id: "wed-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
@@ -50,18 +49,18 @@ const SCHEDULE_DATA = {
     { id: "wed-7", start: "08:30", end: "09:00", title: "Travel to College", category: "travel", icon: "🚶", desc: "Commute to Kristu Jayanti" },
     { id: "wed-8", start: "09:00", end: "12:50", title: "College Classes", category: "college", icon: "🎓", desc: "Cloud, DMW, Python Lab" },
     { id: "wed-9", start: "12:50", end: "13:20", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
-    { id: "wed-10", start: "13:20", end: "13:40", title: "Lunch & Rest Break", category: "break", icon: "🍱", desc: "Lunch and short rest" },
-    { id: "wed-11", start: "13:40", end: "15:40", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
-    { id: "wed-12", start: "15:40", end: "16:00", title: "Tea & Refresh Break", category: "break", icon: "☕", desc: "Short break" },
-    { id: "wed-13", start: "16:00", end: "18:00", title: "BCA Study: DMW Theory", category: "study", icon: "📖", desc: "Data Mining & Warehousing" },
+    { id: "wed-10", start: "13:20", end: "14:20", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
+    { id: "wed-11", start: "14:20", end: "14:40", title: "Lunch & Refresh", category: "break", icon: "🍱", desc: "Lunch and short rest" },
+    { id: "wed-12", start: "14:40", end: "16:40", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
+    { id: "wed-13", start: "16:40", end: "18:00", title: "BCA Study: DMW Theory", category: "study", icon: "📖", desc: "Data Mining & Warehousing" },
     { id: "wed-14", start: "18:00", end: "23:00", title: "Rapido Work Shift", category: "rapido", icon: "🛵", desc: "Evening shift (Target ₹620 min)" },
-    { id: "wed-15", start: "23:00", end: "23:45", title: "Sketching Hobby", category: "hobby", icon: "🎨", desc: "Creative art session" },
-    { id: "wed-16", start: "23:45", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
+    { id: "wed-15", start: "23:00", end: "23:40", title: "BCA Study: DMW Revision", category: "study", icon: "📖", desc: "Evening study recap" },
+    { id: "wed-16", start: "23:40", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
   ],
   thursday: [
     { id: "thu-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
     { id: "thu-2", start: "05:00", end: "05:15", title: "Wake Up & Hydrate", category: "routine", icon: "🌅", desc: "Morning hydration" },
-    { id: "thu-3", start: "05:15", end: "06:00", title: "Book Reading (Part 1)", category: "reading", icon: "📚", desc: "Reading habit session" },
+    { id: "thu-3", start: "05:15", end: "06:00", title: "Book Reading", category: "reading", icon: "📚", desc: "Reading habit session" },
     { id: "thu-4", start: "06:00", end: "08:00", title: "Rapido Morning Shift", category: "rapido", icon: "🛵", desc: "Peak morning surge (2 hrs)" },
     { id: "thu-5", start: "08:00", end: "09:30", title: "Exercise Session", category: "exercise", icon: "🏋️", desc: "1.5 Hours physical training" },
     { id: "thu-6", start: "09:30", end: "11:15", title: "Selenium Java (Part 1)", category: "study", icon: "⚡", desc: "Automation testing study" },
@@ -69,11 +68,11 @@ const SCHEDULE_DATA = {
     { id: "thu-8", start: "11:30", end: "12:00", title: "Travel to College", category: "travel", icon: "🚶", desc: "Commute to college" },
     { id: "thu-9", start: "12:00", end: "15:30", title: "College Classes", category: "college", icon: "🎓", desc: "Mentoring, Python, DMW" },
     { id: "thu-10", start: "15:30", end: "16:00", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
-    { id: "thu-11", start: "16:00", end: "17:00", title: "Selenium Java (Part 2)", category: "study", icon: "⚡", desc: "Automation testing & Tea" },
+    { id: "thu-11", start: "16:00", end: "17:00", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
     { id: "thu-12", start: "17:00", end: "20:00", title: "Rapido Evening Shift", category: "rapido", icon: "🛵", desc: "Peak evening surge (3 hrs - Total 5h)" },
     { id: "thu-13", start: "20:00", end: "22:00", title: "BCA Study: DMW Practicals", category: "study", icon: "📖", desc: "DMW SQL / Lab exercises" },
-    { id: "thu-14", start: "22:00", end: "23:00", title: "Sketching Hobby", category: "hobby", icon: "🎨", desc: "Creative art session" },
-    { id: "thu-15", start: "23:00", end: "23:59", title: "Dinner & Reading Part 2", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
+    { id: "thu-14", start: "22:00", end: "22:15", title: "Selenium Java (Part 2)", category: "study", icon: "⚡", desc: "Automation testing recap" },
+    { id: "thu-15", start: "22:15", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
   ],
   friday: [
     { id: "fri-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
@@ -85,13 +84,13 @@ const SCHEDULE_DATA = {
     { id: "fri-7", start: "08:30", end: "09:00", title: "Travel to College", category: "travel", icon: "🚶", desc: "Commute to Kristu Jayanti" },
     { id: "fri-8", start: "09:00", end: "12:50", title: "College Classes", category: "college", icon: "🎓", desc: "RM, CA, CET, Cloud" },
     { id: "fri-9", start: "12:50", end: "13:20", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
-    { id: "fri-10", start: "13:20", end: "13:40", title: "Lunch & Rest Break", category: "break", icon: "🍱", desc: "Lunch and short rest" },
-    { id: "fri-11", start: "13:40", end: "15:40", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
-    { id: "fri-12", start: "15:40", end: "16:00", title: "Tea & Refresh Break", category: "break", icon: "☕", desc: "Short break" },
-    { id: "fri-13", start: "16:00", end: "18:00", title: "BCA Study: Cloud Computing", category: "study", icon: "📖", desc: "Cloud concepts & Virtualization" },
+    { id: "fri-10", start: "13:20", end: "14:20", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
+    { id: "fri-11", start: "14:20", end: "14:40", title: "Lunch & Refresh", category: "break", icon: "🍱", desc: "Lunch and short rest" },
+    { id: "fri-12", start: "14:40", end: "16:40", title: "Selenium Java Automation", category: "study", icon: "⚡", desc: "Automation testing learning" },
+    { id: "fri-13", start: "16:40", end: "18:00", title: "BCA Study: Cloud Computing", category: "study", icon: "📖", desc: "Cloud concepts & Virtualization" },
     { id: "fri-14", start: "18:00", end: "23:00", title: "Rapido Work Shift", category: "rapido", icon: "🛵", desc: "Evening shift (Target ₹620 min)" },
-    { id: "fri-15", start: "23:00", end: "23:45", title: "Sketching Hobby", category: "hobby", icon: "🎨", desc: "Creative art session" },
-    { id: "fri-16", start: "23:45", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
+    { id: "fri-15", start: "23:00", end: "23:40", title: "BCA Study: Cloud Revision", category: "study", icon: "📖", desc: "Evening study recap" },
+    { id: "fri-16", start: "23:40", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
   ],
   saturday: [
     { id: "sat-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
@@ -108,8 +107,7 @@ const SCHEDULE_DATA = {
     { id: "sat-12", start: "13:40", end: "15:40", title: "BCA Study: Research Methods", category: "study", icon: "📖", desc: "RM Study & documentation" },
     { id: "sat-13", start: "15:40", end: "16:00", title: "Tea & Refresh Break", category: "break", icon: "☕", desc: "Pre-work shift break" },
     { id: "sat-14", start: "16:00", end: "23:00", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - ₹1K–1.2K)" },
-    { id: "sat-15", start: "23:00", end: "23:45", title: "Sketching Hobby", category: "hobby", icon: "🎨", desc: "Creative art session" },
-    { id: "sat-16", start: "23:45", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Wind down for sleep" }
+    { id: "sat-15", start: "23:00", end: "23:59", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" }
   ],
   sunday: [
     { id: "sun-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
@@ -123,8 +121,7 @@ const SCHEDULE_DATA = {
     { id: "sun-9", start: "10:45", end: "12:45", title: "BCA Study: Lab Review", category: "study", icon: "📖", desc: "Weekly practical & lab revision" },
     { id: "sun-10", start: "12:45", end: "13:15", title: "Lunch & Rest Break", category: "break", icon: "🍱", desc: "Lunch and relaxation" },
     { id: "sun-11", start: "13:15", end: "20:15", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - ₹1K–1.2K)" },
-    { id: "sun-12", start: "20:15", end: "20:45", title: "Dinner & Rest Break", category: "break", icon: "🍱", desc: "Dinner break" },
-    { id: "sun-13", start: "20:45", end: "21:45", title: "Sketching Hobby", category: "hobby", icon: "🎨", desc: "Creative art session" },
-    { id: "sun-14", start: "21:45", end: "23:59", title: "Open Rest & Sleep Prep", category: "routine", icon: "☕", desc: "Relaxation & early sleep prep" }
+    { id: "sun-12", start: "20:15", end: "22:15", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" },
+    { id: "sun-13", start: "22:15", end: "23:59", title: "Dinner & Sleep Prep", category: "routine", icon: "🌌", desc: "Relaxation & early sleep prep" }
   ]
 };
