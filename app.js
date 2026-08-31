@@ -33,6 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentDayNameEl = document.getElementById('current-day-name');
   const audioToggleBtn = document.getElementById('audio-toggle-btn');
   const audioIconEl = document.getElementById('audio-icon');
+  const syncBtn = document.getElementById('sync-btn');
+
+  if (syncBtn) {
+    syncBtn.addEventListener('click', () => {
+      if (window.caches) {
+        caches.keys().then(names => {
+          for (let name of names) caches.delete(name);
+        });
+      }
+      window.location.reload(true);
+    });
+  }
   
   const nowIconEl = document.getElementById('now-icon');
   const nowTitleEl = document.getElementById('now-title');
