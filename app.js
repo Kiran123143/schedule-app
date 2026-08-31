@@ -1,5 +1,5 @@
 /**
- * Mobile Schedule Companion - Engine with PIN Lock Security, Unified History Vault, & Auto Date Matching
+ * Mobile Schedule Companion - Engine with Flawless Date Matching & History Tracking
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,9 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyStatsCard = document.getElementById('history-stats-card');
   const historyTaskList = document.getElementById('history-task-list');
 
-  // Seed Yesterday's Completed Record (August 31, 2026)
-  seedYesterdayRecord();
-
   // Initialize App Modules
   initSecurityLock();
   initAudioToggle();
@@ -76,19 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(updateEngine, 1000);
 
   /* -------------------------------------------------------------
-     LOCAL DATE HELPERS (Matches Present Date, Month & Year)
+     EXACT LOCAL DATE & DAY MAPPING HELPERS
   ------------------------------------------------------------- */
   function getTodayDateStr() {
     const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  function getYesterdayDateStr() {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -100,31 +88,52 @@ document.addEventListener('DOMContentLoaded', () => {
     return DAYS_MAP[dayIndex];
   }
 
-  function getStorageKey(taskId, dateStr = getTodayDateStr()) {
+  /**
+   * Calculates the exact date string (YYYY-MM-DD) for a given day tab (mon, tue, wed...)
+   * relative to the current week.
+   */
+  function getDateStrForDayTab(tabDayKey) {
+    const now = new Date();
+    const todayIndex = now.getDay();
+    const targetIndex = DAYS_MAP.indexOf(tabDayKey.toLowerCase());
+    
+    let diffDays = targetIndex - todayIndex;
+    const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffDays);
+    
+    const y = targetDate.getFullYear();
+    const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const d = String(targetDate.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  /**
+   * Calculates the dayKey (monday, tuesday...) for any date string YYYY-MM-DD.
+   */
+  function getDayKeyForDateStr(dateStr) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    return DAYS_MAP[dateObj.getDay()];
+  }
+
+  function getStorageKey(taskId, dateStr) {
     return `task_status_${dateStr}_${taskId}`;
   }
 
-  function getTaskStatus(taskId, dateStr = getTodayDateStr()) {
+  function getTaskStatus(taskId, dateStr) {
     return localStorage.getItem(getStorageKey(taskId, dateStr)) || 'pending';
   }
 
-  function seedYesterdayRecord() {
-    const yestStr = getYesterdayDateStr();
-    const yestKey = 'history_record_' + yestStr;
-    if (!localStorage.getItem(yestKey)) {
-      const monTasks = SCHEDULE_DATA.monday || [];
-      const taskSnapshots = monTasks.map(t => {
-        localStorage.setItem(getStorageKey(t.id, yestStr), 'completed');
-        return { id: t.id, title: t.title, time: `${t.start}-${t.end}`, category: t.category, status: 'completed' };
-      });
-      const record = {
-        date: yestStr,
-        dayName: 'monday',
-        stats: { done: monTasks.length, missed: 0, pending: 0, total: monTasks.length, completionRate: '100%' },
-        tasks: taskSnapshots
-      };
-      localStorage.setItem(yestKey, JSON.stringify(record));
+  function setTaskStatus(taskId, status, dayKey) {
+    const dateStr = getDateStrForDayTab(dayKey);
+    const currentStatus = getTaskStatus(taskId, dateStr);
+    
+    if (currentStatus === status) {
+      localStorage.removeItem(getStorageKey(taskId, dateStr));
+    } else {
+      localStorage.setItem(getStorageKey(taskId, dateStr), status);
     }
+    
+    renderTimeline(selectedDay);
   }
 
   /* -------------------------------------------------------------
@@ -224,45 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* -------------------------------------------------------------
-     UNIFIED DAILY HISTORY DATA STORE
+     DYNAMIC HISTORY VAULT ENGINE
   ------------------------------------------------------------- */
-  function setTaskStatus(taskId, status) {
-    const todayStr = getTodayDateStr();
-    const currentStatus = getTaskStatus(taskId, todayStr);
-    if (currentStatus === status) {
-      localStorage.removeItem(getStorageKey(taskId, todayStr));
-    } else {
-      localStorage.setItem(getStorageKey(taskId, todayStr), status);
-    }
-    
-    saveUnifiedDailySnapshot(todayStr, getCurrentDayKey());
-    renderTimeline(selectedDay);
-  }
-
-  function saveUnifiedDailySnapshot(dateStr, dayKey) {
-    const tasks = SCHEDULE_DATA[dayKey] || [];
-    let done = 0, missed = 0, pending = 0;
-    const taskSnapshots = tasks.map(t => {
-      const st = getTaskStatus(t.id, dateStr);
-      if (st === 'completed') done++;
-      else if (st === 'incomplete') missed++;
-      else pending++;
-      return { id: t.id, title: t.title, time: `${t.start}-${t.end}`, category: t.category, status: st };
-    });
-
-    const total = tasks.length;
-    const rate = total > 0 ? ((done / total) * 100).toFixed(1) + '%' : '0%';
-
-    const record = {
-      date: dateStr,
-      dayName: dayKey,
-      stats: { done, missed, pending, total, completionRate: rate },
-      tasks: taskSnapshots
-    };
-
-    localStorage.setItem(`history_record_${dateStr}`, JSON.stringify(record));
-  }
-
   function initHistoryModal() {
     historyBtn.addEventListener('click', () => {
       const todayStr = getTodayDateStr();
@@ -281,29 +253,36 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderHistoryView(dateStr) {
-    const savedRecordJSON = localStorage.getItem(`history_record_${dateStr}`);
+    const dayKey = getDayKeyForDateStr(dateStr);
+    const tasks = SCHEDULE_DATA[dayKey] || [];
     
-    if (savedRecordJSON) {
-      const record = JSON.parse(savedRecordJSON);
-      const { done, missed, pending, completionRate } = record.stats;
-      
-      historyStatsCard.innerHTML = `
-        <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-green)">${done}</span><span class="h-stat-label">Done</span></div>
-        <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-red)">${missed}</span><span class="h-stat-label">Missed</span></div>
-        <div class="h-stat"><span class="h-stat-num" style="color:var(--text-muted)">${pending}</span><span class="h-stat-label">Pending</span></div>
-        <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-cyan)">${completionRate}</span><span class="h-stat-label">Rate</span></div>
-      `;
+    let done = 0, missed = 0, pending = 0;
+    
+    const taskRows = tasks.map(t => {
+      const status = getTaskStatus(t.id, dateStr);
+      if (status === 'completed') done++;
+      else if (status === 'incomplete') missed++;
+      else pending++;
 
-      historyTaskList.innerHTML = record.tasks.map(t => `
+      return `
         <div class="h-task-item">
-          <span>${t.time} — <strong>${t.title}</strong></span>
-          <span class="h-task-status h-status-${t.status}">${t.status.toUpperCase()}</span>
+          <span>${format12Hour(t.start)}–${format12Hour(t.end)} — <strong>${t.title}</strong></span>
+          <span class="h-task-status h-status-${status}">${status.toUpperCase()}</span>
         </div>
-      `).join('');
-    } else {
-      historyStatsCard.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted);">No snapshot recorded for ${dateStr} yet.</p>`;
-      historyTaskList.innerHTML = '';
-    }
+      `;
+    });
+
+    const total = tasks.length;
+    const rate = total > 0 ? ((done / total) * 100).toFixed(1) + '%' : '0.0%';
+
+    historyStatsCard.innerHTML = `
+      <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-green)">${done}</span><span class="h-stat-label">Done</span></div>
+      <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-red)">${missed}</span><span class="h-stat-label">Missed</span></div>
+      <div class="h-stat"><span class="h-stat-num" style="color:var(--text-muted)">${pending}</span><span class="h-stat-label">Pending</span></div>
+      <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-cyan)">${rate}</span><span class="h-stat-label">Rate</span></div>
+    `;
+
+    historyTaskList.innerHTML = taskRows.join('');
   }
 
   /* -------------------------------------------------------------
@@ -472,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
     timelineListEl.innerHTML = '';
 
     const currentDayKey = getCurrentDayKey();
-    const todayStr = getTodayDateStr();
+    const targetDateStr = getDateStrForDayTab(dayKey);
     const now = new Date();
     const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
@@ -485,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'task-card';
       card.setAttribute('data-index', idx);
 
-      const status = getTaskStatus(task.id, todayStr);
+      const status = getTaskStatus(task.id, targetDateStr);
       if (status === 'completed') {
         card.classList.add('task-completed');
         doneCount++;
@@ -534,13 +513,13 @@ document.addEventListener('DOMContentLoaded', () => {
       card.querySelector('.btn-done').addEventListener('click', (e) => {
         e.stopPropagation();
         initAudioContext();
-        setTaskStatus(task.id, 'completed');
+        setTaskStatus(task.id, 'completed', dayKey);
       });
 
       card.querySelector('.btn-missed').addEventListener('click', (e) => {
         e.stopPropagation();
         initAudioContext();
-        setTaskStatus(task.id, 'incomplete');
+        setTaskStatus(task.id, 'incomplete', dayKey);
       });
 
       timelineListEl.appendChild(card);
