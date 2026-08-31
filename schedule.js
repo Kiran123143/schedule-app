@@ -1,7 +1,7 @@
 /**
  * Master Schedule Data Structure
  * Contains full 24-hour schedule data for Monday through Sunday.
- * Updated Saturday: 7 Hours Sleep (12:00 AM - 7:00 AM), with all tasks cleanly time-blocked.
+ * Updated Saturday: Includes 7h Sleep, 7h Rapido (16:00-23:00), and 2h Pencil Sketching Hobby (23:00-23:59).
  */
 
 const SCHEDULE_DATA = {
@@ -104,9 +104,9 @@ const SCHEDULE_DATA = {
     { id: "sat-9", start: "12:50", end: "13:20", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
     { id: "sat-10", start: "13:20", end: "14:20", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
     { id: "sat-11", start: "14:20", end: "14:40", title: "Lunch Break", category: "break", icon: "🍱", desc: "Lunch break" },
-    { id: "sat-12", start: "14:40", end: "16:40", title: "BCA Study: Research Methods", category: "study", icon: "📖", desc: "Research Methodology (RM) Study" },
-    { id: "sat-13", start: "16:40", end: "17:00", title: "Tea & Refresh Break", category: "break", icon: "☕", desc: "Pre-work shift break" },
-    { id: "sat-14", start: "17:00", end: "23:59", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - Target ₹1K–1.2K)" }
+    { id: "sat-12", start: "14:40", end: "16:00", title: "BCA Study: Research Methods", category: "study", icon: "📖", desc: "Research Methodology (RM) Study" },
+    { id: "sat-13", start: "16:00", end: "23:00", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - Target ₹1K–1.2K)" },
+    { id: "sat-14", start: "23:00", end: "23:59", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" }
   ],
   sunday: [
     { id: "sun-1", start: "00:00", end: "05:00", title: "Sleep", category: "sleep", icon: "💤", desc: "Rest and recovery" },
