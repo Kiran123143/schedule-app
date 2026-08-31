@@ -1,10 +1,14 @@
 /**
- * Mobile Schedule Companion - App Engine with Audio Beep Notifications
+ * Mobile Schedule Companion - Engine with PIN Lock Security & Unified History Vault
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const DAYS_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   let selectedDay = getCurrentDayKey();
+  
+  // Security PIN State
+  let enteredPin = '';
+  let isLocked = true;
   
   // Audio Engine State
   let audioCtx = null;
@@ -13,12 +17,22 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastTransitionTime = 0;
   let lastReminderBeepTime = 0;
 
-  // DOM Elements
+  // DOM Elements - PIN Overlay
+  const pinOverlay = document.getElementById('pin-lock-overlay');
+  const pinTitleEl = document.getElementById('pin-title');
+  const pinSubtitleEl = document.getElementById('pin-subtitle');
+  const pinDots = document.querySelectorAll('#pin-dots .dot');
+  const keyBtns = document.querySelectorAll('.key-btn[data-key]');
+  const keyClearBtn = document.getElementById('key-clear');
+  const keyDelBtn = document.getElementById('key-del');
+  const pinErrorEl = document.getElementById('pin-error');
+  const lockAppBtn = document.getElementById('lock-app-btn');
+
+  // DOM Header & Core
   const liveClockEl = document.getElementById('live-clock');
   const currentDayNameEl = document.getElementById('current-day-name');
   const audioToggleBtn = document.getElementById('audio-toggle-btn');
   const audioIconEl = document.getElementById('audio-icon');
-  const audioStatusEl = document.getElementById('audio-status');
   
   const nowIconEl = document.getElementById('now-icon');
   const nowTitleEl = document.getElementById('now-title');
@@ -41,38 +55,227 @@ document.addEventListener('DOMContentLoaded', () => {
   const timelineListEl = document.getElementById('timeline-list');
   const dayTabs = document.querySelectorAll('.day-tab');
 
-  // Initialize App & Controls
+  // History Vault Modal DOM
+  const historyBtn = document.getElementById('history-btn');
+  const historyModal = document.getElementById('history-modal');
+  const closeHistoryBtn = document.getElementById('close-history-btn');
+  const historyDatePicker = document.getElementById('history-date-picker');
+  const historyStatsCard = document.getElementById('history-stats-card');
+  const historyTaskList = document.getElementById('history-task-list');
+
+  // Initialize App Modules
+  initSecurityLock();
   initAudioToggle();
   initTabs();
+  initHistoryModal();
   renderTimeline(selectedDay);
   updateEngine();
   setInterval(updateEngine, 1000);
+
+  /* -------------------------------------------------------------
+     SECURITY & PIN LOCK SYSTEM (SHA-256 Hashing)
+  ------------------------------------------------------------- */
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function initSecurityLock() {
+    const savedPinHash = localStorage.getItem('app_pin_hash');
+    if (!savedPinHash) {
+      pinTitleEl.textContent = 'Set Secret 4-Digit PIN';
+      pinSubtitleEl.textContent = 'Create a 4-digit PIN to secure your schedule';
+    } else {
+      pinTitleEl.textContent = 'Enter Security PIN';
+      pinSubtitleEl.textContent = 'Enter your 4-digit PIN to unlock your companion';
+    }
+    
+    // Keypad listeners
+    keyBtns.forEach(btn => {
+      btn.addEventListener('click', () => handlePinInput(btn.getAttribute('data-key')));
+    });
+
+    keyClearBtn.addEventListener('click', clearPinInput);
+    keyDelBtn.addEventListener('click', deletePinDigit);
+    lockAppBtn.addEventListener('click', lockApp);
+  }
+
+  function lockApp() {
+    isLocked = true;
+    clearPinInput();
+    const savedPinHash = localStorage.getItem('app_pin_hash');
+    if (savedPinHash) {
+      pinTitleEl.textContent = 'Enter Security PIN';
+      pinSubtitleEl.textContent = 'Enter your 4-digit PIN to unlock your companion';
+    }
+    pinOverlay.classList.remove('hidden');
+  }
+
+  function unlockApp() {
+    isLocked = false;
+    pinOverlay.classList.add('hidden');
+    clearPinInput();
+  }
+
+  function clearPinInput() {
+    enteredPin = '';
+    pinErrorEl.textContent = '';
+    updatePinDots();
+  }
+
+  function deletePinDigit() {
+    if (enteredPin.length > 0) {
+      enteredPin = enteredPin.slice(0, -1);
+      pinErrorEl.textContent = '';
+      updatePinDots();
+    }
+  }
+
+  function updatePinDots() {
+    pinDots.forEach((dot, idx) => {
+      if (idx < enteredPin.length) {
+        dot.classList.add('filled');
+      } else {
+        dot.classList.remove('filled');
+      }
+    });
+  }
+
+  async function handlePinInput(digit) {
+    if (enteredPin.length < 4) {
+      enteredPin += digit;
+      updatePinDots();
+    }
+
+    if (enteredPin.length === 4) {
+      const inputHash = await sha256(enteredPin);
+      const savedPinHash = localStorage.getItem('app_pin_hash');
+
+      if (!savedPinHash) {
+        // First-time setup
+        localStorage.setItem('app_pin_hash', inputHash);
+        unlockApp();
+      } else if (inputHash === savedPinHash) {
+        // Verification success
+        unlockApp();
+      } else {
+        // PIN Incorrect
+        pinErrorEl.textContent = 'Incorrect PIN. Try again.';
+        pinDots.forEach(d => d.style.borderColor = 'var(--accent-red)');
+        setTimeout(() => {
+          pinDots.forEach(d => d.style.borderColor = '');
+          clearPinInput();
+        }, 800);
+      }
+    }
+  }
+
+  /* -------------------------------------------------------------
+     UNIFIED DAILY HISTORY DATA STORE
+  ------------------------------------------------------------- */
+  function getTodayDateStr() {
+    return new Date().toISOString().split('T')[0];
+  }
 
   function getCurrentDayKey() {
     const dayIndex = new Date().getDay();
     return DAYS_MAP[dayIndex];
   }
 
-  function getStorageKey(taskId) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return `task_status_${todayStr}_${taskId}`;
+  function getStorageKey(taskId, dateStr = getTodayDateStr()) {
+    return `task_status_${dateStr}_${taskId}`;
   }
 
-  function getTaskStatus(taskId) {
-    return localStorage.getItem(getStorageKey(taskId)) || 'pending';
+  function getTaskStatus(taskId, dateStr = getTodayDateStr()) {
+    return localStorage.getItem(getStorageKey(taskId, dateStr)) || 'pending';
   }
 
   function setTaskStatus(taskId, status) {
-    const currentStatus = getTaskStatus(taskId);
+    const todayStr = getTodayDateStr();
+    const currentStatus = getTaskStatus(taskId, todayStr);
     if (currentStatus === status) {
-      localStorage.removeItem(getStorageKey(taskId));
+      localStorage.removeItem(getStorageKey(taskId, todayStr));
     } else {
-      localStorage.setItem(getStorageKey(taskId), status);
+      localStorage.setItem(getStorageKey(taskId, todayStr), status);
     }
+    
+    // Save Unified Daily History Snapshot
+    saveUnifiedDailySnapshot(todayStr, getCurrentDayKey());
     renderTimeline(selectedDay);
   }
 
-  /* Audio Synthesizer using Web Audio API */
+  function saveUnifiedDailySnapshot(dateStr, dayKey) {
+    const tasks = SCHEDULE_DATA[dayKey] || [];
+    let done = 0, missed = 0, pending = 0;
+    const taskSnapshots = tasks.map(t => {
+      const st = getTaskStatus(t.id, dateStr);
+      if (st === 'completed') done++;
+      else if (st === 'incomplete') missed++;
+      else pending++;
+      return { id: t.id, title: t.title, time: `${t.start}-${t.end}`, category: t.category, status: st };
+    });
+
+    const total = tasks.length;
+    const rate = total > 0 ? ((done / total) * 100).toFixed(1) + '%' : '0%';
+
+    const record = {
+      date: dateStr,
+      dayName: dayKey,
+      stats: { done, missed, pending, total, completionRate: rate },
+      tasks: taskSnapshots
+    };
+
+    localStorage.setItem(`history_record_${dateStr}`, JSON.stringify(record));
+  }
+
+  function initHistoryModal() {
+    historyBtn.addEventListener('click', () => {
+      const todayStr = getTodayDateStr();
+      historyDatePicker.value = todayStr;
+      renderHistoryView(todayStr);
+      historyModal.classList.add('active');
+    });
+
+    closeHistoryBtn.addEventListener('click', () => {
+      historyModal.classList.remove('active');
+    });
+
+    historyDatePicker.addEventListener('change', (e) => {
+      renderHistoryView(e.target.value);
+    });
+  }
+
+  function renderHistoryView(dateStr) {
+    const savedRecordJSON = localStorage.getItem(`history_record_${dateStr}`);
+    
+    if (savedRecordJSON) {
+      const record = JSON.parse(savedRecordJSON);
+      const { done, missed, pending, completionRate } = record.stats;
+      
+      historyStatsCard.innerHTML = `
+        <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-green)">${done}</span><span class="h-stat-label">Done</span></div>
+        <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-red)">${missed}</span><span class="h-stat-label">Missed</span></div>
+        <div class="h-stat"><span class="h-stat-num" style="color:var(--text-muted)">${pending}</span><span class="h-stat-label">Pending</span></div>
+        <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-cyan)">${completionRate}</span><span class="h-stat-label">Rate</span></div>
+      `;
+
+      historyTaskList.innerHTML = record.tasks.map(t => `
+        <div class="h-task-item">
+          <span>${t.time} — <strong>${t.title}</strong></span>
+          <span class="h-task-status h-status-${t.status}">${t.status.toUpperCase()}</span>
+        </div>
+      `).join('');
+    } else {
+      historyStatsCard.innerHTML = `<p style="font-size:0.8rem; color:var(--text-muted);">No snapshot recorded for ${dateStr} yet.</p>`;
+      historyTaskList.innerHTML = '';
+    }
+  }
+
+  /* -------------------------------------------------------------
+     AUDIO SYNTHESIZER
+  ------------------------------------------------------------- */
   function initAudioContext() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -92,27 +295,21 @@ document.addEventListener('DOMContentLoaded', () => {
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-        
         osc.start();
         osc.stop(audioCtx.currentTime + duration);
-      } catch (e) {
-        console.error('Audio play error', e);
-      }
+      } catch (e) {}
     }, delay * 1000);
   }
 
   function playTransitionChime() {
-    // 2-tone pleasant transition alert chime
-    playTone(880, 'sine', 0.25, 0);    // A5
-    playTone(1046.5, 'sine', 0.35, 0.2); // C6
+    playTone(880, 'sine', 0.25, 0);
+    playTone(1046.5, 'sine', 0.35, 0.2);
   }
 
   function playReminderBeep() {
-    // Gentle 1-minute transition reminder tone
-    playTone(659.25, 'sine', 0.2, 0);  // E5
+    playTone(659.25, 'sine', 0.2, 0);
   }
 
   function initAudioToggle() {
@@ -122,24 +319,21 @@ document.addEventListener('DOMContentLoaded', () => {
       isAudioEnabled = !isAudioEnabled;
       localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
       updateAudioUI();
-      if (isAudioEnabled) {
-        playTransitionChime(); // Play test chime
-      }
+      if (isAudioEnabled) playTransitionChime();
     });
   }
 
   function updateAudioUI() {
     if (isAudioEnabled) {
-      audioToggleBtn.classList.add('audio-active');
       audioIconEl.textContent = '🔔';
-      audioStatusEl.textContent = 'Sound On';
     } else {
-      audioToggleBtn.classList.remove('audio-active');
       audioIconEl.textContent = '🔇';
-      audioStatusEl.textContent = 'Sound Off';
     }
   }
 
+  /* -------------------------------------------------------------
+     TIMELINE & TIME ENGINE
+  ------------------------------------------------------------- */
   function initTabs() {
     dayTabs.forEach(tab => {
       const dayKey = tab.getAttribute('data-day');
@@ -148,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       tab.addEventListener('click', () => {
-        initAudioContext(); // Ensure AudioContext resumes on touch/tap
+        initAudioContext();
         dayTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         selectedDay = dayKey;
@@ -159,20 +353,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateEngine() {
+    if (isLocked) return; // Freeze engine rendering when locked
+
     const now = new Date();
     const currentDayKey = DAYS_MAP[now.getDay()];
     const nowTimestamp = now.getTime();
     
-    // Update Header Clock
+    // Header Clock
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     liveClockEl.textContent = `${hours}:${minutes}:${seconds}`;
     currentDayNameEl.textContent = currentDayKey.toUpperCase();
 
-    // Seconds from midnight
     const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-
     const todayTasks = SCHEDULE_DATA[currentDayKey] || [];
     let currentTaskIndex = -1;
 
@@ -187,21 +381,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Check Task Transition for Audio Alerts
     if (currentTaskIndex !== -1) {
       if (lastActiveTaskIndex !== -1 && lastActiveTaskIndex !== currentTaskIndex) {
-        // Task Transition Triggered!
         lastTransitionTime = nowTimestamp;
         lastReminderBeepTime = nowTimestamp;
         playTransitionChime();
       }
       
-      // Handle 1-Minute Transition Reminder Beeps (Beep every 20s for the 1st minute)
       if (lastTransitionTime > 0) {
-        const elapsedSinceTransitionSec = (nowTimestamp - lastTransitionTime) / 1000;
-        if (elapsedSinceTransitionSec <= 60) {
-          const elapsedSinceLastBeepSec = (nowTimestamp - lastReminderBeepTime) / 1000;
-          if (elapsedSinceLastBeepSec >= 20) {
+        const elapsedSec = (nowTimestamp - lastTransitionTime) / 1000;
+        if (elapsedSec <= 60) {
+          const elapsedBeepSec = (nowTimestamp - lastReminderBeepTime) / 1000;
+          if (elapsedBeepSec >= 20) {
             playReminderBeep();
             lastReminderBeepTime = nowTimestamp;
           }
@@ -219,18 +410,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const elapsed = nowSeconds - startSec;
       const remaining = endSec - nowSeconds;
 
-      // Update Now Banner
       nowIconEl.textContent = activeTask.icon;
       nowTitleEl.textContent = activeTask.title;
       nowTimeRangeEl.textContent = `${format12Hour(activeTask.start)} - ${format12Hour(activeTask.end)}`;
       nowDescEl.textContent = activeTask.desc;
 
-      // Update Countdown & Progress Bar
       countdownTimerEl.textContent = formatCountdown(remaining);
       const progressPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
       progressFillEl.style.width = `${progressPercent.toFixed(1)}%`;
 
-      // Update Next Task Banner
       if (nextTask) {
         nextStartTimeEl.textContent = format12Hour(nextTask.start);
         nextIconEl.textContent = nextTask.icon;
@@ -251,6 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
     timelineListEl.innerHTML = '';
 
     const currentDayKey = getCurrentDayKey();
+    const todayStr = getTodayDateStr();
     const now = new Date();
     const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
@@ -263,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'task-card';
       card.setAttribute('data-index', idx);
 
-      const status = getTaskStatus(task.id);
+      const status = getTaskStatus(task.id, todayStr);
       if (status === 'completed') {
         card.classList.add('task-completed');
         doneCount++;
@@ -300,25 +489,22 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="task-badge badge-${task.category}">${task.category}</span>
         </div>
         <div class="task-actions">
-          <button class="action-btn btn-done ${status === 'completed' ? 'btn-active' : ''}" data-id="${task.id}" data-action="completed">
+          <button class="action-btn btn-done ${status === 'completed' ? 'btn-active' : ''}">
             ✓ Done
           </button>
-          <button class="action-btn btn-missed ${status === 'incomplete' ? 'btn-active' : ''}" data-id="${task.id}" data-action="incomplete">
+          <button class="action-btn btn-missed ${status === 'incomplete' ? 'btn-active' : ''}">
             ✕ Incomplete
           </button>
         </div>
       `;
 
-      const btnDone = card.querySelector('.btn-done');
-      const btnMissed = card.querySelector('.btn-missed');
-
-      btnDone.addEventListener('click', (e) => {
+      card.querySelector('.btn-done').addEventListener('click', (e) => {
         e.stopPropagation();
         initAudioContext();
         setTaskStatus(task.id, 'completed');
       });
 
-      btnMissed.addEventListener('click', (e) => {
+      card.querySelector('.btn-missed').addEventListener('click', (e) => {
         e.stopPropagation();
         initAudioContext();
         setTaskStatus(task.id, 'incomplete');

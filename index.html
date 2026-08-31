@@ -10,16 +10,54 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- PIN Lock Screen Overlay -->
+  <div id="pin-lock-overlay" class="pin-overlay">
+    <div class="pin-card">
+      <div class="pin-header">
+        <span class="lock-icon">🔒</span>
+        <h2 id="pin-title">Enter Security PIN</h2>
+        <p id="pin-subtitle">Enter your 4-digit PIN to access your schedule</p>
+      </div>
+      <div class="pin-dots" id="pin-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <div class="pin-keypad">
+        <button class="key-btn" data-key="1">1</button>
+        <button class="key-btn" data-key="2">2</button>
+        <button class="key-btn" data-key="3">3</button>
+        <button class="key-btn" data-key="4">4</button>
+        <button class="key-btn" data-key="5">5</button>
+        <button class="key-btn" data-key="6">6</button>
+        <button class="key-btn" data-key="7">7</button>
+        <button class="key-btn" data-key="8">8</button>
+        <button class="key-btn" data-key="9">9</button>
+        <button class="key-btn action-key" id="key-clear">C</button>
+        <button class="key-btn" data-key="0">0</button>
+        <button class="key-btn action-key" id="key-del">⌫</button>
+      </div>
+      <p id="pin-error" class="pin-error-text"></p>
+    </div>
+  </div>
+
   <div class="app-container">
-    <!-- Header with Live Clock -->
+    <!-- Header with Live Clock & Security Controls -->
     <header class="app-header">
       <div class="header-info">
         <span class="day-badge" id="current-day-name">MONDAY</span>
         <h1 class="clock-display" id="live-clock">00:00:00</h1>
       </div>
       <div class="header-controls">
-        <button class="audio-toggle-btn" id="audio-toggle-btn">
-          <span id="audio-icon">🔇</span> <span id="audio-status">Sound Off</span>
+        <button class="header-btn" id="history-btn" title="Daily History Vault">
+          📊 History
+        </button>
+        <button class="header-btn" id="audio-toggle-btn" title="Toggle Sound">
+          <span id="audio-icon">🔇</span>
+        </button>
+        <button class="header-btn lock-btn" id="lock-app-btn" title="Lock App">
+          🔒
         </button>
       </div>
     </header>
@@ -102,6 +140,28 @@
         <!-- Dynamic Task Cards Render Here -->
       </div>
     </main>
+  </div>
+
+  <!-- History Vault Modal -->
+  <div id="history-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>📊 Daily History Vault</h2>
+        <button class="close-btn" id="close-history-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="history-picker-row">
+          <label for="history-date-picker">Select Date:</label>
+          <input type="date" id="history-date-picker">
+        </div>
+        <div class="history-stats-card" id="history-stats-card">
+          <!-- Dynamic History Summary -->
+        </div>
+        <div class="history-task-list" id="history-task-list">
+          <!-- Dynamic Task Records for Date -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="schedule.js"></script>
