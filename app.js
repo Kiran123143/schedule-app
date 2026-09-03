@@ -75,6 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyStatsCard = document.getElementById('history-stats-card');
   const historyTaskList = document.getElementById('history-task-list');
 
+  // Register PWA Service Worker for 100% Offline Capability
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('[PWA] Service Worker registered for offline use:', reg.scope))
+        .catch(err => console.error('[PWA] Service Worker registration failed:', err));
+    });
+  }
+
   // Initialize App Modules
   initSecurityLock();
   initAudioToggle();
