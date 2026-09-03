@@ -2,7 +2,7 @@
  * Service Worker for Offline Mobile PWA App
  */
 
-const CACHE_NAME = 'schedule-app-v1.0.9';
+const CACHE_NAME = 'schedule-app-v1.1.1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
