@@ -9,46 +9,14 @@
   <meta name="theme-color" content="#0b0f19">
   <link rel="manifest" href="manifest.json">
   <title>My Schedule Companion</title>
-  <link rel="stylesheet" href="style.css?v=1.0.7">
+  <link rel="stylesheet" href="style.css?v=1.1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- PIN Lock Screen Overlay -->
-  <div id="pin-lock-overlay" class="pin-overlay">
-    <div class="pin-card">
-      <div class="pin-header">
-        <span class="lock-icon">🔒</span>
-        <h2 id="pin-title">Enter Security PIN</h2>
-        <p id="pin-subtitle">Enter your 4-digit PIN to access your schedule</p>
-      </div>
-      <div class="pin-dots" id="pin-dots">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </div>
-      <div class="pin-keypad">
-        <button class="key-btn" data-key="1">1</button>
-        <button class="key-btn" data-key="2">2</button>
-        <button class="key-btn" data-key="3">3</button>
-        <button class="key-btn" data-key="4">4</button>
-        <button class="key-btn" data-key="5">5</button>
-        <button class="key-btn" data-key="6">6</button>
-        <button class="key-btn" data-key="7">7</button>
-        <button class="key-btn" data-key="8">8</button>
-        <button class="key-btn" data-key="9">9</button>
-        <button class="key-btn action-key" id="key-clear">C</button>
-        <button class="key-btn" data-key="0">0</button>
-        <button class="key-btn action-key" id="key-del">⌫</button>
-      </div>
-      <p id="pin-error" class="pin-error-text"></p>
-    </div>
-  </div>
-
   <div class="app-container">
-    <!-- Header with Live Clock & Security Controls -->
+    <!-- Header with Live Clock & App Controls -->
     <header class="app-header">
       <div class="header-info">
         <span class="day-badge" id="current-day-name">MONDAY</span>
@@ -60,7 +28,6 @@
         <button class="header-btn" id="audio-toggle-btn" title="Toggle Sound">
           <span id="audio-icon">🔇</span>
         </button>
-        <button class="header-btn lock-btn" id="lock-app-btn" title="Lock App">🔒</button>
       </div>
     </header>
 
@@ -166,7 +133,7 @@
     </div>
   </div>
 
-  <script src="schedule.js?v=1.0.9"></script>
-  <script src="app.js?v=1.0.9"></script>
+  <script src="schedule.js?v=1.1.0"></script>
+  <script src="app.js?v=1.1.0"></script>
 </body>
 </html>

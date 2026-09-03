@@ -6,27 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const DAYS_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   let selectedDay = getCurrentDayKey();
   
-  // Security PIN State
-  let enteredPin = '';
-  let isLocked = true;
-  
   // Audio Engine State
   let audioCtx = null;
   let isAudioEnabled = localStorage.getItem('schedule_audio_enabled') === 'true';
   let lastActiveTaskIndex = -1;
   let lastTransitionTime = 0;
   let lastReminderBeepTime = 0;
-
-  // DOM Elements - PIN Overlay
-  const pinOverlay = document.getElementById('pin-lock-overlay');
-  const pinTitleEl = document.getElementById('pin-title');
-  const pinSubtitleEl = document.getElementById('pin-subtitle');
-  const pinDots = document.querySelectorAll('#pin-dots .dot');
-  const keyBtns = document.querySelectorAll('.key-btn[data-key]');
-  const keyClearBtn = document.getElementById('key-clear');
-  const keyDelBtn = document.getElementById('key-del');
-  const pinErrorEl = document.getElementById('pin-error');
-  const lockAppBtn = document.getElementById('lock-app-btn');
 
   // DOM Header & Core
   const liveClockEl = document.getElementById('live-clock');
@@ -85,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialize App Modules
-  initSecurityLock();
   initAudioToggle();
   initTabs();
   initHistoryModal();
@@ -155,102 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     renderTimeline(selectedDay);
-  }
-
-  /* -------------------------------------------------------------
-     SECURITY & PIN LOCK SYSTEM (SHA-256 Hashing)
-  ------------------------------------------------------------- */
-  async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  function initSecurityLock() {
-    const savedPinHash = localStorage.getItem('app_pin_hash');
-    if (!savedPinHash) {
-      pinTitleEl.textContent = 'Set Secret 4-Digit PIN';
-      pinSubtitleEl.textContent = 'Create a 4-digit PIN to secure your schedule';
-    } else {
-      pinTitleEl.textContent = 'Enter Security PIN';
-      pinSubtitleEl.textContent = 'Enter your 4-digit PIN to unlock your companion';
-    }
-    
-    keyBtns.forEach(btn => {
-      btn.addEventListener('click', () => handlePinInput(btn.getAttribute('data-key')));
-    });
-
-    keyClearBtn.addEventListener('click', clearPinInput);
-    keyDelBtn.addEventListener('click', deletePinDigit);
-    lockAppBtn.addEventListener('click', lockApp);
-  }
-
-  function lockApp() {
-    isLocked = true;
-    clearPinInput();
-    const savedPinHash = localStorage.getItem('app_pin_hash');
-    if (savedPinHash) {
-      pinTitleEl.textContent = 'Enter Security PIN';
-      pinSubtitleEl.textContent = 'Enter your 4-digit PIN to unlock your companion';
-    }
-    pinOverlay.classList.remove('hidden');
-  }
-
-  function unlockApp() {
-    isLocked = false;
-    pinOverlay.classList.add('hidden');
-    clearPinInput();
-  }
-
-  function clearPinInput() {
-    enteredPin = '';
-    pinErrorEl.textContent = '';
-    updatePinDots();
-  }
-
-  function deletePinDigit() {
-    if (enteredPin.length > 0) {
-      enteredPin = enteredPin.slice(0, -1);
-      pinErrorEl.textContent = '';
-      updatePinDots();
-    }
-  }
-
-  function updatePinDots() {
-    pinDots.forEach((dot, idx) => {
-      if (idx < enteredPin.length) {
-        dot.classList.add('filled');
-      } else {
-        dot.classList.remove('filled');
-      }
-    });
-  }
-
-  async function handlePinInput(digit) {
-    if (enteredPin.length < 4) {
-      enteredPin += digit;
-      updatePinDots();
-    }
-
-    if (enteredPin.length === 4) {
-      const inputHash = await sha256(enteredPin);
-      const savedPinHash = localStorage.getItem('app_pin_hash');
-
-      if (!savedPinHash) {
-        localStorage.setItem('app_pin_hash', inputHash);
-        unlockApp();
-      } else if (inputHash === savedPinHash) {
-        unlockApp();
-      } else {
-        pinErrorEl.textContent = 'Incorrect PIN. Try again.';
-        pinDots.forEach(d => d.style.borderColor = 'var(--accent-red)');
-        setTimeout(() => {
-          pinDots.forEach(d => d.style.borderColor = '');
-          clearPinInput();
-        }, 800);
-      }
-    }
   }
 
   /* -------------------------------------------------------------
@@ -386,8 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateEngine() {
-    if (isLocked) return;
-
     const now = new Date();
     const currentDayKey = DAYS_MAP[now.getDay()];
     const nowTimestamp = now.getTime();
