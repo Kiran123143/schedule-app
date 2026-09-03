@@ -1,7 +1,7 @@
 /**
  * Master Schedule Data Structure
  * Contains full 24-hour schedule data for Monday through Sunday.
- * Updated Mon/Wed/Fri: College Campus Stay till 1:40 PM (12:50-13:40), replacing 20m lunch & 40m Selenium Java.
+ * Updated Saturday & Sunday: Replaced afternoon power nap with Play Time & Recreation.
  */
 
 const SCHEDULE_DATA = {
@@ -102,7 +102,7 @@ const SCHEDULE_DATA = {
     { id: "sat-7", start: "10:30", end: "11:00", title: "Travel to College", category: "travel", icon: "🚶", desc: "Commute to college" },
     { id: "sat-8", start: "11:00", end: "12:50", title: "PRISM: Selenium Java", category: "study", icon: "⚡", desc: "Self Development Class: Selenium Java Practice" },
     { id: "sat-9", start: "12:50", end: "13:20", title: "Travel Home", category: "travel", icon: "🚶", desc: "Commute back home" },
-    { id: "sat-10", start: "13:20", end: "14:20", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Post-College Nap & Rest" },
+    { id: "sat-10", start: "13:20", end: "14:20", title: "Play Time & Recreation", category: "break", icon: "🎮", desc: "Afternoon games, sports & relaxation" },
     { id: "sat-11", start: "14:20", end: "14:40", title: "Lunch Break", category: "break", icon: "🍱", desc: "Lunch break" },
     { id: "sat-12", start: "14:40", end: "16:00", title: "BCA Study: Research Methods", category: "study", icon: "📖", desc: "Research Methodology (RM) Study" },
     { id: "sat-13", start: "16:00", end: "23:00", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - Target ₹1K–1.2K)" },
@@ -115,11 +115,10 @@ const SCHEDULE_DATA = {
     { id: "sun-4", start: "08:45", end: "09:15", title: "Bathing & Hygiene", category: "routine", icon: "🧼", desc: "Alternate day bathing" },
     { id: "sun-5", start: "09:15", end: "10:15", title: "Book Reading", category: "reading", icon: "📚", desc: "Daily reading habit" },
     { id: "sun-6", start: "10:15", end: "10:45", title: "Breakfast Break", category: "break", icon: "☕", desc: "Breakfast & relax" },
-    { id: "sun-7", start: "10:45", end: "12:15", title: "Play Time & Recreation", category: "break", icon: "🎮", desc: "Dedicated sports, games & recreation time" },
-    { id: "sun-8", start: "12:15", end: "13:15", title: "Afternoon Power Nap", category: "sleep", icon: "😴", desc: "1 Hour Afternoon Nap & Rest" },
-    { id: "sun-9", start: "13:15", end: "20:15", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - ₹1K–1.2K)" },
-    { id: "sun-10", start: "20:15", end: "20:45", title: "Dinner & Refresh", category: "break", icon: "🍱", desc: "Dinner break" },
-    { id: "sun-11", start: "20:45", end: "22:45", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" },
-    { id: "sun-12", start: "22:45", end: "23:59", title: "Wind Down & Sleep Prep", category: "routine", icon: "🌌", desc: "Rest & night wind down" }
+    { id: "sun-7", start: "10:45", end: "13:15", title: "Play Time & Recreation", category: "break", icon: "🎮", desc: "Dedicated sports, games & recreation time (2.5 Hours)" },
+    { id: "sun-8", start: "13:15", end: "20:15", title: "Rapido Weekend Shift", category: "rapido", icon: "🛵", desc: "Weekend Peak (7 Hours - ₹1K–1.2K)" },
+    { id: "sun-9", start: "20:15", end: "20:45", title: "Dinner & Refresh", category: "break", icon: "🍱", desc: "Dinner break" },
+    { id: "sun-10", start: "20:45", end: "22:45", title: "Pencil Sketching Hobby", category: "hobby", icon: "🎨", desc: "Weekend Sketching Session (2 Hours)" },
+    { id: "sun-11", start: "22:45", end: "23:59", title: "Wind Down & Sleep Prep", category: "routine", icon: "🌌", desc: "Rest & night wind down" }
   ]
 };
