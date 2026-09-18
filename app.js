@@ -1,22 +1,26 @@
 /**
- * Mobile Schedule Companion Engine - Dynamic CRUD & Offline-First Engine
+ * Mobile Schedule Companion Engine - 12-Hour Indian Clock & Dual Ringtone System
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const DAYS_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   let selectedDay = getCurrentDayKey();
   
-  // Audio State
-  let audioCtx = null;
+  // Audio State & Local Custom Ringtones
   let isAudioEnabled = localStorage.getItem('schedule_audio_enabled') !== 'false';
+  let customEndAudio = localStorage.getItem('custom_end_ringtone') || null;
+  let customStartAudio = localStorage.getItem('custom_start_ringtone') || null;
+  
+  let activeTaskId = null;
+  let audioCtx = null;
 
-  // Schedule Data Storage (Local Overrides)
+  // Schedule Data Storage
   let userScheduleData = loadUserSchedule();
 
   // DOM Elements
   const liveClockEl = document.getElementById('live-clock');
   const currentDayNameEl = document.getElementById('current-day-name');
-  const audioToggleBtn = document.getElementById('audio-toggle-btn');
+  const audioSettingsBtn = document.getElementById('audio-settings-btn');
   const audioIconEl = document.getElementById('audio-icon');
 
   const nowIconEl = document.getElementById('now-icon');
@@ -46,6 +50,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeTaskModalBtn = document.getElementById('close-task-modal');
   const taskForm = document.getElementById('task-form');
 
+  const audioModal = document.getElementById('audio-modal');
+  const closeAudioModalBtn = document.getElementById('close-audio-modal');
+  const toggleSoundStateBtn = document.getElementById('toggle-sound-state');
+  const endRingtoneInput = document.getElementById('end-ringtone-input');
+  const startRingtoneInput = document.getElementById('start-ringtone-input');
+  const endRingtoneStatus = document.getElementById('end-ringtone-status');
+  const startRingtoneStatus = document.getElementById('start-ringtone-status');
+  const testAudioBtn = document.getElementById('test-audio-btn');
+
   const historyBtn = document.getElementById('history-btn');
   const historyModal = document.getElementById('history-modal');
   const closeHistoryBtn = document.getElementById('close-history-btn');
@@ -53,12 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyStatsCard = document.getElementById('history-stats-card');
   const historyTaskList = document.getElementById('history-task-list');
 
-  // Service Worker
+  // Service Worker Registration
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 
-  initAudioToggle();
+  initAudioControls();
   initTabs();
   initTaskModal();
   initHistoryModal();
@@ -81,16 +94,169 @@ document.addEventListener('DOMContentLoaded', () => {
     updateEngine();
   }
 
-  /* ------------------- TASK CREATION / EDITING ------------------- */
+  /* ------------------- 12-HOUR INDIAN CLOCK & ENGINE ------------------- */
+  function updateEngine() {
+    const now = new Date();
+    const currentDayKey = DAYS_MAP[now.getDay()];
+    
+    // 12-Hour Indian Clock Formatting (hh:mm:ss AM/PM)
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const formattedHours = String(hours).padStart(2, '0');
+    
+    liveClockEl.textContent = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+    currentDayNameEl.textContent = currentDayKey.toUpperCase();
+
+    const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    const todayTasks = userScheduleData[currentDayKey] || [];
+    let currentTaskIndex = -1;
+
+    for (let i = 0; i < todayTasks.length; i++) {
+      const startSec = timeToSeconds(todayTasks[i].start);
+      const endSec = timeToSeconds(todayTasks[i].end);
+      if (nowSeconds >= startSec && nowSeconds < endSec) {
+        currentTaskIndex = i;
+        break;
+      }
+    }
+
+    if (currentTaskIndex !== -1) {
+      const activeTask = todayTasks[currentTaskIndex];
+      
+      // Trigger Start Ringtone on new active task detection
+      if (activeTaskId !== activeTask.id) {
+        if (activeTaskId !== null) {
+          playRingtone('end'); // Play end alert for previous task
+          setTimeout(() => playRingtone('start'), 1500); // Play start alert for new task
+        } else {
+          playRingtone('start');
+        }
+        activeTaskId = activeTask.id;
+      }
+
+      const nextTask = todayTasks[(currentTaskIndex + 1) % todayTasks.length];
+      const startSec = timeToSeconds(activeTask.start);
+      const endSec = timeToSeconds(activeTask.end);
+      
+      nowIconEl.textContent = activeTask.icon;
+      nowTitleEl.textContent = activeTask.title;
+      nowTimeRangeEl.textContent = `${format12Hour(activeTask.start)} - ${format12Hour(activeTask.end)}`;
+      nowDescEl.textContent = activeTask.desc;
+
+      countdownTimerEl.textContent = formatCountdown(endSec - nowSeconds);
+      const progressPercent = Math.min(100, Math.max(0, ((nowSeconds - startSec) / (endSec - startSec)) * 100));
+      progressFillEl.style.width = `${progressPercent.toFixed(1)}%`;
+
+      if (nextTask) {
+        nextStartTimeEl.textContent = format12Hour(nextTask.start);
+        nextIconEl.textContent = nextTask.icon;
+        nextTitleEl.textContent = nextTask.title;
+        nextDescEl.textContent = nextTask.desc;
+      }
+    } else {
+      if (activeTaskId !== null) {
+        playRingtone('end'); // Play end ringtone when task finishes and no task follows
+        activeTaskId = null;
+      }
+      nowIconEl.textContent = '💤';
+      nowTitleEl.textContent = 'No Active Task';
+      nowTimeRangeEl.textContent = '--:-- - --:--';
+      nowDescEl.textContent = 'Free Time / Idle';
+      countdownTimerEl.textContent = '00h 00m 00s';
+      progressFillEl.style.width = '0%';
+    }
+  }
+
+  /* ------------------- AUDIO & RINGTONE ENGINE ------------------- */
+  function playRingtone(type) {
+    if (!isAudioEnabled) return;
+
+    const audioData = type === 'end' ? customEndAudio : customStartAudio;
+
+    if (audioData) {
+      const audio = new Audio(audioData);
+      audio.play().catch(() => playSynthesizedChime(type));
+    } else {
+      playSynthesizedChime(type);
+    }
+  }
+
+  function playSynthesizedChime(type) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(type === 'start' ? 587.33 : 440, audioCtx.currentTime); // D5 for start, A4 for end
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.2);
+    } catch (e) {}
+  }
+
+  function initAudioControls() {
+    audioSettingsBtn.addEventListener('click', () => audioModal.classList.add('active'));
+    closeAudioModalBtn.addEventListener('click', () => audioModal.classList.remove('active'));
+
+    updateSoundUI();
+
+    toggleSoundStateBtn.addEventListener('click', () => {
+      isAudioEnabled = !isAudioEnabled;
+      localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
+      updateSoundUI();
+    });
+
+    endRingtoneInput.addEventListener('change', (e) => handleRingtoneUpload(e, 'end'));
+    startRingtoneInput.addEventListener('change', (e) => handleRingtoneUpload(e, 'start'));
+
+    testAudioBtn.addEventListener('click', () => {
+      playRingtone('end');
+      setTimeout(() => playRingtone('start'), 1500);
+    });
+  }
+
+  function handleRingtoneUpload(e, type) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64Audio = event.target.result;
+        if (type === 'end') {
+          customEndAudio = base64Audio;
+          localStorage.setItem('custom_end_ringtone', base64Audio);
+        } else {
+          customStartAudio = base64Audio;
+          localStorage.setItem('custom_start_ringtone', base64Audio);
+        }
+        updateSoundUI();
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function updateSoundUI() {
+    toggleSoundStateBtn.textContent = `Sound: ${isAudioEnabled ? 'ENABLED' : 'DISABLED'}`;
+    audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
+    endRingtoneStatus.textContent = customEndAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
+    startRingtoneStatus.textContent = customStartAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
+  }
+
+  /* ------------------- TASK CREATION & TIMELINE ------------------- */
   function initTaskModal() {
     openAddTaskBtn.addEventListener('click', () => {
       document.getElementById('task-day').value = selectedDay;
       taskModal.classList.add('active');
     });
 
-    closeTaskModalBtn.addEventListener('click', () => {
-      taskModal.classList.remove('active');
-    });
+    closeTaskModalBtn.addEventListener('click', () => taskModal.classList.remove('active'));
 
     taskForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -119,52 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userScheduleData[dayKey]) {
       userScheduleData[dayKey] = userScheduleData[dayKey].filter(t => t.id !== taskId);
       saveUserSchedule();
-    }
-  }
-
-  /* ------------------- ENGINE & RENDER logic ------------------- */
-  function updateEngine() {
-    const now = new Date();
-    const currentDayKey = DAYS_MAP[now.getDay()];
-    
-    liveClockEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-    currentDayNameEl.textContent = currentDayKey.toUpperCase();
-
-    const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-    const todayTasks = userScheduleData[currentDayKey] || [];
-    let currentTaskIndex = -1;
-
-    for (let i = 0; i < todayTasks.length; i++) {
-      const startSec = timeToSeconds(todayTasks[i].start);
-      const endSec = timeToSeconds(todayTasks[i].end);
-      if (nowSeconds >= startSec && nowSeconds < endSec) {
-        currentTaskIndex = i;
-        break;
-      }
-    }
-
-    if (currentTaskIndex !== -1) {
-      const activeTask = todayTasks[currentTaskIndex];
-      const nextTask = todayTasks[(currentTaskIndex + 1) % todayTasks.length];
-
-      const startSec = timeToSeconds(activeTask.start);
-      const endSec = timeToSeconds(activeTask.end);
-      
-      nowIconEl.textContent = activeTask.icon;
-      nowTitleEl.textContent = activeTask.title;
-      nowTimeRangeEl.textContent = `${format12Hour(activeTask.start)} - ${format12Hour(activeTask.end)}`;
-      nowDescEl.textContent = activeTask.desc;
-
-      countdownTimerEl.textContent = formatCountdown(endSec - nowSeconds);
-      const progressPercent = Math.min(100, Math.max(0, ((nowSeconds - startSec) / (endSec - startSec)) * 100));
-      progressFillEl.style.width = `${progressPercent.toFixed(1)}%`;
-
-      if (nextTask) {
-        nextStartTimeEl.textContent = format12Hour(nextTask.start);
-        nextIconEl.textContent = nextTask.icon;
-        nextTitleEl.textContent = nextTask.title;
-        nextDescEl.textContent = nextTask.desc;
-      }
     }
   }
 
@@ -291,11 +411,4 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
   }
   function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
-  function initAudioToggle() {
-    audioToggleBtn.addEventListener('click', () => {
-      isAudioEnabled = !isAudioEnabled;
-      localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
-      audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
-    });
-  }
 });

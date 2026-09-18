@@ -16,12 +16,13 @@
     <header class="app-header">
       <div class="header-info">
         <span class="day-badge" id="current-day-name">MONDAY</span>
-        <h1 class="clock-display" id="live-clock">00:00:00</h1>
+        <!-- 12-Hour AM/PM Clock -->
+        <h1 class="clock-display" id="live-clock">12:00:00 AM</h1>
       </div>
       <div class="header-controls">
         <button class="header-btn btn-add-task" id="open-add-task-btn">+ Task</button>
         <button class="header-btn" id="history-btn">📊 History</button>
-        <button class="header-btn" id="audio-toggle-btn"><span id="audio-icon">🔔</span></button>
+        <button class="header-btn" id="audio-settings-btn"><span id="audio-icon">🔔</span></button>
       </div>
     </header>
 
@@ -143,6 +144,31 @@
         </div>
         <button type="submit" class="btn-primary btn-add-task" style="width: 100%; margin-top: 8px;">Save Task</button>
       </form>
+    </div>
+  </div>
+
+  <!-- Audio & Ringtone Settings Modal -->
+  <div id="audio-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>🔔 Sound & Alert Ringtones</h2>
+        <button class="close-btn" id="close-audio-modal">✕</button>
+      </div>
+      <div class="form-group">
+        <label>Audio Notifications</label>
+        <button class="btn-primary" id="toggle-sound-state" style="width: 100%;">Sound: ENABLED</button>
+      </div>
+      <div class="form-group" style="margin-top: 10px;">
+        <label>Task Ended Alert Ringtone</label>
+        <input type="file" id="end-ringtone-input" accept="audio/*" class="form-control">
+        <span style="font-size: 0.7rem; color: #94a3b8;" id="end-ringtone-status">Default Chime Active</span>
+      </div>
+      <div class="form-group" style="margin-top: 10px;">
+        <label>Task Started Alert Ringtone</label>
+        <input type="file" id="start-ringtone-input" accept="audio/*" class="form-control">
+        <span style="font-size: 0.7rem; color: #94a3b8;" id="start-ringtone-status">Default Chime Active</span>
+      </div>
+      <button class="action-btn" id="test-audio-btn" style="margin-top: 12px; width: 100%;">🔊 Test Alert Sounds</button>
     </div>
   </div>
 
