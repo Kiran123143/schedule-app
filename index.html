@@ -3,50 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <meta name="theme-color" content="#0b0f19">
   <link rel="manifest" href="manifest.json">
-  <title>My Schedule Companion</title>
-  <link rel="stylesheet" href="style.css?v=1.1.0">
+  <title>Schedule Companion</title>
+  <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app-container">
-    <!-- Header with Live Clock & App Controls -->
     <header class="app-header">
       <div class="header-info">
         <span class="day-badge" id="current-day-name">MONDAY</span>
         <h1 class="clock-display" id="live-clock">00:00:00</h1>
       </div>
       <div class="header-controls">
-        <button class="header-btn" id="sync-btn" title="Sync Latest Schedule">🔄 Sync</button>
-        <button class="header-btn" id="history-btn" title="Daily History Vault">📊 History</button>
-        <button class="header-btn" id="audio-toggle-btn" title="Toggle Sound">
-          <span id="audio-icon">🔇</span>
-        </button>
+        <button class="header-btn btn-add-task" id="open-add-task-btn">+ Task</button>
+        <button class="header-btn" id="history-btn">📊 History</button>
+        <button class="header-btn" id="audio-toggle-btn"><span id="audio-icon">🔔</span></button>
       </div>
     </header>
 
-    <!-- Active Task Banner (NOW PLAYING) -->
     <section class="now-banner">
-      <div class="banner-label">
-        <span class="pulse-icon">🔴</span> HAPPENING NOW
-      </div>
+      <div class="banner-label">🔴 HAPPENING NOW</div>
       <div class="now-content">
         <div class="now-icon-box" id="now-icon">💤</div>
         <div class="now-details">
-          <h2 id="now-title">Sleep & Recovery</h2>
-          <p id="now-time-range">12:00 AM - 05:00 AM</p>
-          <span class="now-desc" id="now-desc">Rest and recovery</span>
+          <h2 id="now-title">Loading Schedule...</h2>
+          <p id="now-time-range">--:-- - --:--</p>
+          <span class="now-desc" id="now-desc">Syncing local routine</span>
         </div>
       </div>
       <div class="progress-section">
         <div class="progress-info">
-          <span id="countdown-label">Time Remaining</span>
+          <span>Time Remaining</span>
           <span class="countdown-timer" id="countdown-timer">00h 00m 00s</span>
         </div>
         <div class="progress-bar-track">
@@ -55,22 +46,20 @@
       </div>
     </section>
 
-    <!-- Up Next Card -->
     <section class="next-card">
       <div class="next-header">
-        <span class="next-tag">UP NEXT</span>
-        <span class="next-start-time" id="next-start-time">05:00 AM</span>
+        <span>UP NEXT</span>
+        <span id="next-start-time">--:--</span>
       </div>
       <div class="next-body">
         <span class="next-icon" id="next-icon">🌅</span>
         <div class="next-text">
-          <h3 id="next-title">Wake Up & Hydrate</h3>
-          <p id="next-desc">Hydration & mental preparation</p>
+          <h3 id="next-title">Next Task</h3>
+          <p id="next-desc">Upcoming activity</p>
         </div>
       </div>
     </section>
 
-    <!-- Day Selector Tabs -->
     <section class="day-navigation">
       <div class="tabs-scroll" id="day-tabs">
         <button class="day-tab" data-day="monday">Mon</button>
@@ -83,32 +72,78 @@
       </div>
     </section>
 
-    <!-- Daily Task Completion Summary Counter -->
     <section class="daily-summary-bar">
-      <div class="summary-item stat-done">
-        <span class="summary-count" id="stat-done-count">0</span>
-        <span class="summary-label">✓ Done</span>
-      </div>
-      <div class="summary-item stat-missed">
-        <span class="summary-count" id="stat-missed-count">0</span>
-        <span class="summary-label">✕ Missed</span>
-      </div>
-      <div class="summary-item stat-pending">
-        <span class="summary-count" id="stat-pending-count">0</span>
-        <span class="summary-label">⏳ Pending</span>
-      </div>
+      <div class="summary-item stat-done"><span class="summary-count" id="stat-done-count">0</span><span class="summary-label">Done</span></div>
+      <div class="summary-item stat-missed"><span class="summary-count" id="stat-missed-count">0</span><span class="summary-label">Missed</span></div>
+      <div class="summary-item stat-pending"><span class="summary-count" id="stat-pending-count">0</span><span class="summary-label">Pending</span></div>
     </section>
 
-    <!-- Timeline Schedule List -->
     <main class="timeline-section">
       <div class="timeline-header">
         <h3 id="timeline-title">Monday Routine</h3>
-        <span class="task-count" id="task-count">16 Tasks</span>
+        <span class="task-count" id="task-count">0 Tasks</span>
       </div>
-      <div class="timeline-list" id="timeline-list">
-        <!-- Dynamic Task Cards Render Here -->
-      </div>
+      <div class="timeline-list" id="timeline-list"></div>
     </main>
+  </div>
+
+  <!-- Custom Task Configurator Modal -->
+  <div id="task-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>➕ Add / Edit Task</h2>
+        <button class="close-btn" id="close-task-modal">✕</button>
+      </div>
+      <form id="task-form">
+        <div class="form-group">
+          <label>Target Day</label>
+          <select id="task-day" class="form-control">
+            <option value="monday">Monday</option>
+            <option value="tuesday">Tuesday</option>
+            <option value="wednesday">Wednesday</option>
+            <option value="thursday">Thursday</option>
+            <option value="friday">Friday</option>
+            <option value="saturday">Saturday</option>
+            <option value="sunday">Sunday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Task Title</label>
+          <input type="text" id="task-title" class="form-control" placeholder="e.g. Study Python" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Time</label>
+            <input type="time" id="task-start" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>End Time</label>
+            <input type="time" id="task-end" class="form-control" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="task-category" class="form-control">
+              <option value="study">Study</option>
+              <option value="exercise">Exercise</option>
+              <option value="routine">Routine</option>
+              <option value="break">Break</option>
+              <option value="sleep">Sleep</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Icon Emoji</label>
+            <input type="text" id="task-icon" class="form-control" value="⚡" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="task-desc" class="form-control" placeholder="Brief notes">
+        </div>
+        <button type="submit" class="btn-primary btn-add-task" style="width: 100%; margin-top: 8px;">Save Task</button>
+      </form>
+    </div>
   </div>
 
   <!-- History Vault Modal -->
@@ -118,22 +153,16 @@
         <h2>📊 Daily History Vault</h2>
         <button class="close-btn" id="close-history-btn">✕</button>
       </div>
-      <div class="modal-body">
-        <div class="history-picker-row">
-          <label for="history-date-picker">Select Date:</label>
-          <input type="date" id="history-date-picker">
-        </div>
-        <div class="history-stats-card" id="history-stats-card">
-          <!-- Dynamic History Summary -->
-        </div>
-        <div class="history-task-list" id="history-task-list">
-          <!-- Dynamic Task Records for Date -->
-        </div>
+      <div class="form-group">
+        <label for="history-date-picker">Select Date:</label>
+        <input type="date" id="history-date-picker" class="form-control">
       </div>
+      <div id="history-stats-card" class="daily-summary-bar"></div>
+      <div id="history-task-list" class="timeline-list" style="margin-top: 10px;"></div>
     </div>
   </div>
 
-  <script src="schedule.js?v=1.1.1"></script>
-  <script src="app.js?v=1.1.1"></script>
+  <script src="schedule.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

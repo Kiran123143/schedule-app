@@ -1,48 +1,36 @@
 /**
- * Mobile Schedule Companion - Engine with Flawless Date Matching & History Tracking
+ * Mobile Schedule Companion Engine - Dynamic CRUD & Offline-First Engine
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const DAYS_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   let selectedDay = getCurrentDayKey();
   
-  // Audio Engine State
+  // Audio State
   let audioCtx = null;
-  let isAudioEnabled = localStorage.getItem('schedule_audio_enabled') === 'true';
-  let lastActiveTaskIndex = -1;
-  let lastTransitionTime = 0;
-  let lastReminderBeepTime = 0;
+  let isAudioEnabled = localStorage.getItem('schedule_audio_enabled') !== 'false';
 
-  // DOM Header & Core
+  // Schedule Data Storage (Local Overrides)
+  let userScheduleData = loadUserSchedule();
+
+  // DOM Elements
   const liveClockEl = document.getElementById('live-clock');
   const currentDayNameEl = document.getElementById('current-day-name');
   const audioToggleBtn = document.getElementById('audio-toggle-btn');
   const audioIconEl = document.getElementById('audio-icon');
-  const syncBtn = document.getElementById('sync-btn');
 
-  if (syncBtn) {
-    syncBtn.addEventListener('click', () => {
-      if (window.caches) {
-        caches.keys().then(names => {
-          for (let name of names) caches.delete(name);
-        });
-      }
-      window.location.reload(true);
-    });
-  }
-  
   const nowIconEl = document.getElementById('now-icon');
   const nowTitleEl = document.getElementById('now-title');
   const nowTimeRangeEl = document.getElementById('now-time-range');
   const nowDescEl = document.getElementById('now-desc');
   const countdownTimerEl = document.getElementById('countdown-timer');
   const progressFillEl = document.getElementById('progress-fill');
-  
+
   const nextStartTimeEl = document.getElementById('next-start-time');
   const nextIconEl = document.getElementById('next-icon');
   const nextTitleEl = document.getElementById('next-title');
   const nextDescEl = document.getElementById('next-desc');
-  
+
   const statDoneCountEl = document.getElementById('stat-done-count');
   const statMissedCountEl = document.getElementById('stat-missed-count');
   const statPendingCountEl = document.getElementById('stat-pending-count');
@@ -52,7 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const timelineListEl = document.getElementById('timeline-list');
   const dayTabs = document.querySelectorAll('.day-tab');
 
-  // History Vault Modal DOM
+  // Modals
+  const taskModal = document.getElementById('task-modal');
+  const openAddTaskBtn = document.getElementById('open-add-task-btn');
+  const closeTaskModalBtn = document.getElementById('close-task-modal');
+  const taskForm = document.getElementById('task-form');
+
   const historyBtn = document.getElementById('history-btn');
   const historyModal = document.getElementById('history-modal');
   const closeHistoryBtn = document.getElementById('close-history-btn');
@@ -60,240 +53,90 @@ document.addEventListener('DOMContentLoaded', () => {
   const historyStatsCard = document.getElementById('history-stats-card');
   const historyTaskList = document.getElementById('history-task-list');
 
-  // Register PWA Service Worker for 100% Offline Capability
+  // Service Worker
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('[PWA] Service Worker registered for offline use:', reg.scope))
-        .catch(err => console.error('[PWA] Service Worker registration failed:', err));
-    });
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 
-  // Initialize App Modules
   initAudioToggle();
   initTabs();
+  initTaskModal();
   initHistoryModal();
   renderTimeline(selectedDay);
   updateEngine();
   setInterval(updateEngine, 1000);
 
-  /* -------------------------------------------------------------
-     EXACT LOCAL DATE & DAY MAPPING HELPERS
-  ------------------------------------------------------------- */
-  function getTodayDateStr() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  function getCurrentDayKey() {
-    const dayIndex = new Date().getDay();
-    return DAYS_MAP[dayIndex];
-  }
-
-  /**
-   * Calculates the exact date string (YYYY-MM-DD) for a given day tab (mon, tue, wed...)
-   * relative to the current week.
-   */
-  function getDateStrForDayTab(tabDayKey) {
-    const now = new Date();
-    const todayIndex = now.getDay();
-    const targetIndex = DAYS_MAP.indexOf(tabDayKey.toLowerCase());
-    
-    let diffDays = targetIndex - todayIndex;
-    const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffDays);
-    
-    const y = targetDate.getFullYear();
-    const m = String(targetDate.getMonth() + 1).padStart(2, '0');
-    const d = String(targetDate.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
-  /**
-   * Calculates the dayKey (monday, tuesday...) for any date string YYYY-MM-DD.
-   */
-  function getDayKeyForDateStr(dateStr) {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const dateObj = new Date(y, m - 1, d);
-    return DAYS_MAP[dateObj.getDay()];
-  }
-
-  function getStorageKey(taskId, dateStr) {
-    return `task_status_${dateStr}_${taskId}`;
-  }
-
-  function getTaskStatus(taskId, dateStr) {
-    return localStorage.getItem(getStorageKey(taskId, dateStr)) || 'pending';
-  }
-
-  function setTaskStatus(taskId, status, dayKey) {
-    const dateStr = getDateStrForDayTab(dayKey);
-    const currentStatus = getTaskStatus(taskId, dateStr);
-    
-    if (currentStatus === status) {
-      localStorage.removeItem(getStorageKey(taskId, dateStr));
-    } else {
-      localStorage.setItem(getStorageKey(taskId, dateStr), status);
+  /* ------------------- DYNAMIC SCHEDULE STORAGE ------------------- */
+  function loadUserSchedule() {
+    const saved = localStorage.getItem('user_schedule_data');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
     }
-    
+    return typeof DEFAULT_SCHEDULE !== 'undefined' ? DEFAULT_SCHEDULE : {};
+  }
+
+  function saveUserSchedule() {
+    localStorage.setItem('user_schedule_data', JSON.stringify(userScheduleData));
     renderTimeline(selectedDay);
+    updateEngine();
   }
 
-  /* -------------------------------------------------------------
-     DYNAMIC HISTORY VAULT ENGINE
-  ------------------------------------------------------------- */
-  function initHistoryModal() {
-    historyBtn.addEventListener('click', () => {
-      const todayStr = getTodayDateStr();
-      historyDatePicker.value = todayStr;
-      renderHistoryView(todayStr);
-      historyModal.classList.add('active');
+  /* ------------------- TASK CREATION / EDITING ------------------- */
+  function initTaskModal() {
+    openAddTaskBtn.addEventListener('click', () => {
+      document.getElementById('task-day').value = selectedDay;
+      taskModal.classList.add('active');
     });
 
-    closeHistoryBtn.addEventListener('click', () => {
-      historyModal.classList.remove('active');
+    closeTaskModalBtn.addEventListener('click', () => {
+      taskModal.classList.remove('active');
     });
 
-    historyDatePicker.addEventListener('change', (e) => {
-      renderHistoryView(e.target.value);
+    taskForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const day = document.getElementById('task-day').value;
+      const newTask = {
+        id: `custom-${Date.now()}`,
+        start: document.getElementById('task-start').value,
+        end: document.getElementById('task-end').value,
+        title: document.getElementById('task-title').value,
+        category: document.getElementById('task-category').value,
+        icon: document.getElementById('task-icon').value,
+        desc: document.getElementById('task-desc').value || 'User Custom Task'
+      };
+
+      if (!userScheduleData[day]) userScheduleData[day] = [];
+      userScheduleData[day].push(newTask);
+      userScheduleData[day].sort((a, b) => timeToSeconds(a.start) - timeToSeconds(b.start));
+
+      saveUserSchedule();
+      taskForm.reset();
+      taskModal.classList.remove('active');
     });
   }
 
-  function renderHistoryView(dateStr) {
-    const dayKey = getDayKeyForDateStr(dateStr);
-    const tasks = SCHEDULE_DATA[dayKey] || [];
-    
-    let done = 0, missed = 0, pending = 0;
-    
-    const taskRows = tasks.map(t => {
-      const status = getTaskStatus(t.id, dateStr);
-      if (status === 'completed') done++;
-      else if (status === 'incomplete') missed++;
-      else pending++;
-
-      return `
-        <div class="h-task-item">
-          <span>${format12Hour(t.start)}–${format12Hour(t.end)} — <strong>${t.title}</strong></span>
-          <span class="h-task-status h-status-${status}">${status.toUpperCase()}</span>
-        </div>
-      `;
-    });
-
-    const total = tasks.length;
-    const rate = total > 0 ? ((done / total) * 100).toFixed(1) + '%' : '0.0%';
-
-    historyStatsCard.innerHTML = `
-      <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-green)">${done}</span><span class="h-stat-label">Done</span></div>
-      <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-red)">${missed}</span><span class="h-stat-label">Missed</span></div>
-      <div class="h-stat"><span class="h-stat-num" style="color:var(--text-muted)">${pending}</span><span class="h-stat-label">Pending</span></div>
-      <div class="h-stat"><span class="h-stat-num" style="color:var(--accent-cyan)">${rate}</span><span class="h-stat-label">Rate</span></div>
-    `;
-
-    historyTaskList.innerHTML = taskRows.join('');
-  }
-
-  /* -------------------------------------------------------------
-     AUDIO SYNTHESIZER
-  ------------------------------------------------------------- */
-  function initAudioContext() {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+  function deleteTask(dayKey, taskId) {
+    if (userScheduleData[dayKey]) {
+      userScheduleData[dayKey] = userScheduleData[dayKey].filter(t => t.id !== taskId);
+      saveUserSchedule();
     }
   }
 
-  function playTone(freq, type, duration, delay = 0) {
-    if (!isAudioEnabled || !audioCtx) return;
-    setTimeout(() => {
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-      } catch (e) {}
-    }, delay * 1000);
-  }
-
-  function playTransitionChime() {
-    playTone(880, 'sine', 0.25, 0);
-    playTone(1046.5, 'sine', 0.35, 0.2);
-  }
-
-  function playReminderBeep() {
-    playTone(659.25, 'sine', 0.2, 0);
-  }
-
-  function initAudioToggle() {
-    updateAudioUI();
-    audioToggleBtn.addEventListener('click', () => {
-      initAudioContext();
-      isAudioEnabled = !isAudioEnabled;
-      localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
-      updateAudioUI();
-      if (isAudioEnabled) playTransitionChime();
-    });
-  }
-
-  function updateAudioUI() {
-    if (isAudioEnabled) {
-      audioIconEl.textContent = '🔔';
-    } else {
-      audioIconEl.textContent = '🔇';
-    }
-  }
-
-  /* -------------------------------------------------------------
-     TIMELINE & TIME ENGINE
-  ------------------------------------------------------------- */
-  function initTabs() {
-    dayTabs.forEach(tab => {
-      const dayKey = tab.getAttribute('data-day');
-      if (dayKey === selectedDay) {
-        tab.classList.add('active');
-      }
-
-      tab.addEventListener('click', () => {
-        initAudioContext();
-        dayTabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        selectedDay = dayKey;
-        renderTimeline(selectedDay);
-        updateEngine();
-      });
-    });
-  }
-
+  /* ------------------- ENGINE & RENDER logic ------------------- */
   function updateEngine() {
     const now = new Date();
     const currentDayKey = DAYS_MAP[now.getDay()];
-    const nowTimestamp = now.getTime();
     
-    // Header Clock
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    liveClockEl.textContent = `${hours}:${minutes}:${seconds}`;
+    liveClockEl.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     currentDayNameEl.textContent = currentDayKey.toUpperCase();
 
     const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-    const todayTasks = SCHEDULE_DATA[currentDayKey] || [];
+    const todayTasks = userScheduleData[currentDayKey] || [];
     let currentTaskIndex = -1;
 
     for (let i = 0; i < todayTasks.length; i++) {
-      const task = todayTasks[i];
-      const startSec = timeToSeconds(task.start);
-      const endSec = timeToSeconds(task.end);
-
+      const startSec = timeToSeconds(todayTasks[i].start);
+      const endSec = timeToSeconds(todayTasks[i].end);
       if (nowSeconds >= startSec && nowSeconds < endSec) {
         currentTaskIndex = i;
         break;
@@ -301,41 +144,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (currentTaskIndex !== -1) {
-      if (lastActiveTaskIndex !== -1 && lastActiveTaskIndex !== currentTaskIndex) {
-        lastTransitionTime = nowTimestamp;
-        lastReminderBeepTime = nowTimestamp;
-        playTransitionChime();
-      }
-      
-      if (lastTransitionTime > 0) {
-        const elapsedSec = (nowTimestamp - lastTransitionTime) / 1000;
-        if (elapsedSec <= 60) {
-          const elapsedBeepSec = (nowTimestamp - lastReminderBeepTime) / 1000;
-          if (elapsedBeepSec >= 20) {
-            playReminderBeep();
-            lastReminderBeepTime = nowTimestamp;
-          }
-        }
-      }
-
-      lastActiveTaskIndex = currentTaskIndex;
-
       const activeTask = todayTasks[currentTaskIndex];
       const nextTask = todayTasks[(currentTaskIndex + 1) % todayTasks.length];
 
       const startSec = timeToSeconds(activeTask.start);
       const endSec = timeToSeconds(activeTask.end);
-      const totalDuration = endSec - startSec;
-      const elapsed = nowSeconds - startSec;
-      const remaining = endSec - nowSeconds;
-
+      
       nowIconEl.textContent = activeTask.icon;
       nowTitleEl.textContent = activeTask.title;
       nowTimeRangeEl.textContent = `${format12Hour(activeTask.start)} - ${format12Hour(activeTask.end)}`;
       nowDescEl.textContent = activeTask.desc;
 
-      countdownTimerEl.textContent = formatCountdown(remaining);
-      const progressPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+      countdownTimerEl.textContent = formatCountdown(endSec - nowSeconds);
+      const progressPercent = Math.min(100, Math.max(0, ((nowSeconds - startSec) / (endSec - startSec)) * 100));
       progressFillEl.style.width = `${progressPercent.toFixed(1)}%`;
 
       if (nextTask) {
@@ -345,142 +166,136 @@ document.addEventListener('DOMContentLoaded', () => {
         nextDescEl.textContent = nextTask.desc;
       }
     }
-
-    if (selectedDay === currentDayKey) {
-      highlightActiveTaskInList(currentTaskIndex);
-    }
   }
 
   function renderTimeline(dayKey) {
-    const tasks = SCHEDULE_DATA[dayKey] || [];
+    const tasks = userScheduleData[dayKey] || [];
     timelineTitleEl.textContent = `${capitalize(dayKey)} Routine`;
     taskCountEl.textContent = `${tasks.length} Tasks`;
     timelineListEl.innerHTML = '';
 
-    const currentDayKey = getCurrentDayKey();
     const targetDateStr = getDateStrForDayTab(dayKey);
-    const now = new Date();
-    const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    let done = 0, missed = 0, pending = 0;
 
-    let doneCount = 0;
-    let missedCount = 0;
-    let pendingCount = 0;
-
-    tasks.forEach((task, idx) => {
-      const card = document.createElement('div');
-      card.className = 'task-card';
-      card.setAttribute('data-index', idx);
-
+    tasks.forEach((task) => {
       const status = getTaskStatus(task.id, targetDateStr);
-      if (status === 'completed') {
-        card.classList.add('task-completed');
-        doneCount++;
-      } else if (status === 'incomplete') {
-        card.classList.add('task-missed');
-        missedCount++;
-      } else {
-        pendingCount++;
-      }
+      if (status === 'completed') done++;
+      else if (status === 'incomplete') missed++;
+      else pending++;
 
-      const startSec = timeToSeconds(task.start);
-      const endSec = timeToSeconds(task.end);
-
-      if (dayKey === currentDayKey && status === 'pending') {
-        if (nowSec >= startSec && nowSec < endSec) {
-          card.classList.add('active-item');
-        } else if (nowSec >= endSec) {
-          card.classList.add('past-item');
-        }
-      }
-
+      const card = document.createElement('div');
+      card.className = `task-card ${status === 'completed' ? 'task-completed' : ''}`;
+      
       card.innerHTML = `
         <div class="task-main-row">
           <div class="task-time-box">
-            <span class="task-time-start">${format12Hour(task.start)}</span>
-            <span class="task-time-end">${format12Hour(task.end)}</span>
+            <span>${format12Hour(task.start)}</span>
+            <span>${format12Hour(task.end)}</span>
           </div>
-          <div class="task-divider"></div>
           <div class="task-icon">${task.icon}</div>
           <div class="task-info">
             <div class="task-title">${task.title}</div>
             <div class="task-desc">${task.desc}</div>
           </div>
-          <span class="task-badge badge-${task.category}">${task.category}</span>
+          <span class="task-badge">${task.category}</span>
         </div>
         <div class="task-actions">
-          <button class="action-btn btn-done ${status === 'completed' ? 'btn-active' : ''}">
-            ✓ Done
-          </button>
-          <button class="action-btn btn-missed ${status === 'incomplete' ? 'btn-active' : ''}">
-            ✕ Incomplete
-          </button>
+          <button class="action-btn btn-done ${status === 'completed' ? 'btn-active' : ''}">✓ Done</button>
+          <button class="action-btn btn-missed ${status === 'incomplete' ? 'btn-active' : ''}">✕ Missed</button>
+          <button class="action-btn btn-delete">🗑 Delete</button>
         </div>
       `;
 
-      card.querySelector('.btn-done').addEventListener('click', (e) => {
-        e.stopPropagation();
-        initAudioContext();
-        setTaskStatus(task.id, 'completed', dayKey);
-      });
-
-      card.querySelector('.btn-missed').addEventListener('click', (e) => {
-        e.stopPropagation();
-        initAudioContext();
-        setTaskStatus(task.id, 'incomplete', dayKey);
-      });
+      card.querySelector('.btn-done').addEventListener('click', () => setTaskStatus(task.id, 'completed', dayKey));
+      card.querySelector('.btn-missed').addEventListener('click', () => setTaskStatus(task.id, 'incomplete', dayKey));
+      card.querySelector('.btn-delete').addEventListener('click', () => deleteTask(dayKey, task.id));
 
       timelineListEl.appendChild(card);
     });
 
-    statDoneCountEl.textContent = doneCount;
-    statMissedCountEl.textContent = missedCount;
-    statPendingCountEl.textContent = pendingCount;
+    statDoneCountEl.textContent = done;
+    statMissedCountEl.textContent = missed;
+    statPendingCountEl.textContent = pending;
   }
 
-  function highlightActiveTaskInList(activeIndex) {
-    const cards = timelineListEl.querySelectorAll('.task-card');
-    cards.forEach((card, idx) => {
-      const isCompleted = card.classList.contains('task-completed');
-      const isMissed = card.classList.contains('task-missed');
-
-      if (!isCompleted && !isMissed) {
-        if (idx === activeIndex) {
-          card.classList.add('active-item');
-          card.classList.remove('past-item');
-        } else if (idx < activeIndex) {
-          card.classList.remove('active-item');
-          card.classList.add('past-item');
-        } else {
-          card.classList.remove('active-item');
-          card.classList.remove('past-item');
-        }
-      }
+  /* ------------------- HELPERS & MODALS ------------------- */
+  function initTabs() {
+    dayTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        dayTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        selectedDay = tab.getAttribute('data-day');
+        renderTimeline(selectedDay);
+      });
     });
   }
 
-  // Helpers
-  function timeToSeconds(timeStr) {
-    const [h, m] = timeStr.split(':').map(Number);
-    return h * 3600 + m * 60;
+  function initHistoryModal() {
+    historyBtn.addEventListener('click', () => {
+      const today = getTodayDateStr();
+      historyDatePicker.value = today;
+      renderHistoryView(today);
+      historyModal.classList.add('active');
+    });
+    closeHistoryBtn.addEventListener('click', () => historyModal.classList.remove('active'));
+    historyDatePicker.addEventListener('change', (e) => renderHistoryView(e.target.value));
   }
 
-  function format12Hour(timeStr) {
-    let [h, m] = timeStr.split(':').map(Number);
+  function renderHistoryView(dateStr) {
+    const dayKey = DAYS_MAP[new Date(dateStr).getDay()];
+    const tasks = userScheduleData[dayKey] || [];
+    let done = 0, missed = 0, pending = 0;
+
+    const rows = tasks.map(t => {
+      const status = getTaskStatus(t.id, dateStr);
+      if (status === 'completed') done++;
+      else if (status === 'incomplete') missed++;
+      else pending++;
+      return `<div class="task-card"><div class="task-title">${t.title} (${status.toUpperCase()})</div></div>`;
+    });
+
+    historyStatsCard.innerHTML = `<div>Done: ${done}</div><div>Missed: ${missed}</div><div>Pending: ${pending}</div>`;
+    historyTaskList.innerHTML = rows.join('');
+  }
+
+  function getCurrentDayKey() { return DAYS_MAP[new Date().getDay()]; }
+  function getTodayDateStr() { return new Date().toISOString().split('T')[0]; }
+  function getDateStrForDayTab(tabKey) {
+    const now = new Date();
+    const diff = DAYS_MAP.indexOf(tabKey) - now.getDay();
+    const target = new Date(now.setDate(now.getDate() + diff));
+    return target.toISOString().split('T')[0];
+  }
+
+  function getTaskStatus(taskId, dateStr) { return localStorage.getItem(`status_${dateStr}_${taskId}`) || 'pending'; }
+  function setTaskStatus(taskId, status, dayKey) {
+    const dateStr = getDateStrForDayTab(dayKey);
+    const curr = getTaskStatus(taskId, dateStr);
+    if (curr === status) localStorage.removeItem(`status_${dateStr}_${taskId}`);
+    else localStorage.setItem(`status_${dateStr}_${taskId}`, status);
+    renderTimeline(dayKey);
+  }
+
+  function timeToSeconds(str) { const [h, m] = str.split(':').map(Number); return h * 3600 + m * 60; }
+  function format12Hour(str) {
+    let [h, m] = str.split(':').map(Number);
     const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12;
-    h = h ? h : 12;
-    const mStr = String(m).padStart(2, '0');
-    return `${h}:${mStr} ${ampm}`;
+    h = h % 12 || 12;
+    return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
   }
-
   function formatCountdown(sec) {
+    if (sec <= 0) return '00h 00m 00s';
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
     return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
   }
-
-  function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+  function initAudioToggle() {
+    audioToggleBtn.addEventListener('click', () => {
+      isAudioEnabled = !isAudioEnabled;
+      localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
+      audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
+    });
   }
 });
