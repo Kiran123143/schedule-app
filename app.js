@@ -1,85 +1,77 @@
 /**
- * Mobile Schedule Companion Engine - 12-Hour Indian Clock & Dual Ringtone System
+ * Mobile Schedule Companion Engine - Fault-Tolerant Engine
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   const DAYS_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  let selectedDay = getCurrentDayKey();
   
-  // Audio State & Local Custom Ringtones
+  // Audio State & Phone Ringtone Management
   let isAudioEnabled = localStorage.getItem('schedule_audio_enabled') !== 'false';
   let customEndAudio = localStorage.getItem('custom_end_ringtone') || null;
   let customStartAudio = localStorage.getItem('custom_start_ringtone') || null;
-  
   let activeTaskId = null;
   let audioCtx = null;
 
-  // Schedule Data Storage
-  let userScheduleData = loadUserSchedule();
+  // Safe DOM Element Selector
+  const getEl = (id) => document.getElementById(id);
 
-  // DOM Elements
-  const liveClockEl = document.getElementById('live-clock');
-  const currentDayNameEl = document.getElementById('current-day-name');
-  const audioSettingsBtn = document.getElementById('audio-settings-btn');
-  const audioIconEl = document.getElementById('audio-icon');
+  // Core Header Elements
+  const liveClockEl = getEl('live-clock');
+  const currentDayNameEl = getEl('current-day-name');
+  const audioBtn = getEl('audio-settings-btn') || getEl('audio-toggle-btn');
+  const audioIconEl = getEl('audio-icon');
 
-  const nowIconEl = document.getElementById('now-icon');
-  const nowTitleEl = document.getElementById('now-title');
-  const nowTimeRangeEl = document.getElementById('now-time-range');
-  const nowDescEl = document.getElementById('now-desc');
-  const countdownTimerEl = document.getElementById('countdown-timer');
-  const progressFillEl = document.getElementById('progress-fill');
+  // Happening Now Elements
+  const nowIconEl = getEl('now-icon');
+  const nowTitleEl = getEl('now-title');
+  const nowTimeRangeEl = getEl('now-time-range');
+  const nowDescEl = getEl('now-desc');
+  const countdownTimerEl = getEl('countdown-timer');
+  const progressFillEl = getEl('progress-fill');
 
-  const nextStartTimeEl = document.getElementById('next-start-time');
-  const nextIconEl = document.getElementById('next-icon');
-  const nextTitleEl = document.getElementById('next-title');
-  const nextDescEl = document.getElementById('next-desc');
+  // Up Next Elements
+  const nextStartTimeEl = getEl('next-start-time');
+  const nextIconEl = getEl('next-icon');
+  const nextTitleEl = getEl('next-title');
+  const nextDescEl = getEl('next-desc');
 
-  const statDoneCountEl = document.getElementById('stat-done-count');
-  const statMissedCountEl = document.getElementById('stat-missed-count');
-  const statPendingCountEl = document.getElementById('stat-pending-count');
+  // Summary Elements
+  const statDoneCountEl = getEl('stat-done-count');
+  const statMissedCountEl = getEl('stat-missed-count');
+  const statPendingCountEl = getEl('stat-pending-count');
 
-  const timelineTitleEl = document.getElementById('timeline-title');
-  const taskCountEl = document.getElementById('task-count');
-  const timelineListEl = document.getElementById('timeline-list');
+  // Timeline Elements
+  const timelineTitleEl = getEl('timeline-title');
+  const taskCountEl = getEl('task-count');
+  const timelineListEl = getEl('timeline-list');
   const dayTabs = document.querySelectorAll('.day-tab');
 
-  // Modals
-  const taskModal = document.getElementById('task-modal');
-  const openAddTaskBtn = document.getElementById('open-add-task-btn');
-  const closeTaskModalBtn = document.getElementById('close-task-modal');
-  const taskForm = document.getElementById('task-form');
+  // Modal Elements
+  const taskModal = getEl('task-modal');
+  const openAddTaskBtn = getEl('open-add-task-btn');
+  const closeTaskModalBtn = getEl('close-task-modal');
+  const taskForm = getEl('task-form');
 
-  const audioModal = document.getElementById('audio-modal');
-  const closeAudioModalBtn = document.getElementById('close-audio-modal');
-  const toggleSoundStateBtn = document.getElementById('toggle-sound-state');
-  const endRingtoneInput = document.getElementById('end-ringtone-input');
-  const startRingtoneInput = document.getElementById('start-ringtone-input');
-  const endRingtoneStatus = document.getElementById('end-ringtone-status');
-  const startRingtoneStatus = document.getElementById('start-ringtone-status');
-  const testAudioBtn = document.getElementById('test-audio-btn');
+  const audioModal = getEl('audio-modal');
+  const closeAudioModalBtn = getEl('close-audio-modal');
+  const toggleSoundStateBtn = getEl('toggle-sound-state');
+  const endRingtoneInput = getEl('end-ringtone-input');
+  const startRingtoneInput = getEl('start-ringtone-input');
+  const endRingtoneStatus = getEl('end-ringtone-status');
+  const startRingtoneStatus = getEl('start-ringtone-status');
+  const testAudioBtn = getEl('test-audio-btn');
 
-  const historyBtn = document.getElementById('history-btn');
-  const historyModal = document.getElementById('history-modal');
-  const closeHistoryBtn = document.getElementById('close-history-btn');
-  const historyDatePicker = document.getElementById('history-date-picker');
-  const historyStatsCard = document.getElementById('history-stats-card');
-  const historyTaskList = document.getElementById('history-task-list');
+  const historyBtn = getEl('history-btn');
+  const historyModal = getEl('history-modal');
+  const closeHistoryBtn = getEl('close-history-btn');
+  const historyDatePicker = getEl('history-date-picker');
+  const historyStatsCard = getEl('history-stats-card');
+  const historyTaskList = getEl('history-task-list');
 
-  // Service Worker Registration
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  }
+  // State Initialization
+  function getTodayKey() { return DAYS_MAP[new Date().getDay()]; }
+  let selectedDay = getTodayKey();
 
-  initAudioControls();
-  initTabs();
-  initTaskModal();
-  initHistoryModal();
-  renderTimeline(selectedDay);
-  updateEngine();
-  setInterval(updateEngine, 1000);
-
-  /* ------------------- DYNAMIC SCHEDULE STORAGE ------------------- */
   function loadUserSchedule() {
     const saved = localStorage.getItem('user_schedule_data');
     if (saved) {
@@ -88,94 +80,109 @@ document.addEventListener('DOMContentLoaded', () => {
     return typeof DEFAULT_SCHEDULE !== 'undefined' ? DEFAULT_SCHEDULE : {};
   }
 
+  let userScheduleData = loadUserSchedule();
+
   function saveUserSchedule() {
     localStorage.setItem('user_schedule_data', JSON.stringify(userScheduleData));
     renderTimeline(selectedDay);
     updateEngine();
   }
 
-  /* ------------------- 12-HOUR INDIAN CLOCK & ENGINE ------------------- */
-  function updateEngine() {
-    const now = new Date();
-    const currentDayKey = DAYS_MAP[now.getDay()];
-    
-    // 12-Hour Indian Clock Formatting (hh:mm:ss AM/PM)
-    let hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    const formattedHours = String(hours).padStart(2, '0');
-    
-    liveClockEl.textContent = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
-    currentDayNameEl.textContent = currentDayKey.toUpperCase();
-
-    const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-    const todayTasks = userScheduleData[currentDayKey] || [];
-    let currentTaskIndex = -1;
-
-    for (let i = 0; i < todayTasks.length; i++) {
-      const startSec = timeToSeconds(todayTasks[i].start);
-      const endSec = timeToSeconds(todayTasks[i].end);
-      if (nowSeconds >= startSec && nowSeconds < endSec) {
-        currentTaskIndex = i;
-        break;
-      }
-    }
-
-    if (currentTaskIndex !== -1) {
-      const activeTask = todayTasks[currentTaskIndex];
-      
-      // Trigger Start Ringtone on new active task detection
-      if (activeTaskId !== activeTask.id) {
-        if (activeTaskId !== null) {
-          playRingtone('end'); // Play end alert for previous task
-          setTimeout(() => playRingtone('start'), 1500); // Play start alert for new task
-        } else {
-          playRingtone('start');
-        }
-        activeTaskId = activeTask.id;
-      }
-
-      const nextTask = todayTasks[(currentTaskIndex + 1) % todayTasks.length];
-      const startSec = timeToSeconds(activeTask.start);
-      const endSec = timeToSeconds(activeTask.end);
-      
-      nowIconEl.textContent = activeTask.icon;
-      nowTitleEl.textContent = activeTask.title;
-      nowTimeRangeEl.textContent = `${format12Hour(activeTask.start)} - ${format12Hour(activeTask.end)}`;
-      nowDescEl.textContent = activeTask.desc;
-
-      countdownTimerEl.textContent = formatCountdown(endSec - nowSeconds);
-      const progressPercent = Math.min(100, Math.max(0, ((nowSeconds - startSec) / (endSec - startSec)) * 100));
-      progressFillEl.style.width = `${progressPercent.toFixed(1)}%`;
-
-      if (nextTask) {
-        nextStartTimeEl.textContent = format12Hour(nextTask.start);
-        nextIconEl.textContent = nextTask.icon;
-        nextTitleEl.textContent = nextTask.title;
-        nextDescEl.textContent = nextTask.desc;
-      }
-    } else {
-      if (activeTaskId !== null) {
-        playRingtone('end'); // Play end ringtone when task finishes and no task follows
-        activeTaskId = null;
-      }
-      nowIconEl.textContent = '💤';
-      nowTitleEl.textContent = 'No Active Task';
-      nowTimeRangeEl.textContent = '--:-- - --:--';
-      nowDescEl.textContent = 'Free Time / Idle';
-      countdownTimerEl.textContent = '00h 00m 00s';
-      progressFillEl.style.width = '0%';
-    }
+  // Local Timezone Helpers (Avoids UTC Shift Bugs)
+  function getLocalDateStr(d = new Date()) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
-  /* ------------------- AUDIO & RINGTONE ENGINE ------------------- */
+  function getDateStrForDayTab(tabKey) {
+    const now = new Date();
+    const diff = DAYS_MAP.indexOf(tabKey) - now.getDay();
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+    return getLocalDateStr(target);
+  }
+
+  /* ------------------- 12-HOUR CLOCK & CORE ENGINE ------------------- */
+  function updateEngine() {
+    try {
+      const now = new Date();
+      const currentDayKey = DAYS_MAP[now.getDay()];
+      
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      const formattedHours = String(hours).padStart(2, '0');
+      
+      if (liveClockEl) liveClockEl.textContent = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+      if (currentDayNameEl) currentDayNameEl.textContent = currentDayKey.toUpperCase();
+
+      const nowSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      const todayTasks = userScheduleData[currentDayKey] || [];
+      let currentTaskIndex = -1;
+
+      for (let i = 0; i < todayTasks.length; i++) {
+        const startSec = timeToSeconds(todayTasks[i].start);
+        const endSec = timeToSeconds(todayTasks[i].end);
+        if (nowSeconds >= startSec && nowSeconds < endSec) {
+          currentTaskIndex = i;
+          break;
+        }
+      }
+
+      if (currentTaskIndex !== -1) {
+        const activeTask = todayTasks[currentTaskIndex];
+        
+        if (activeTaskId !== activeTask.id) {
+          if (activeTaskId !== null) {
+            playRingtone('end');
+            setTimeout(() => playRingtone('start'), 1500);
+          } else {
+            playRingtone('start');
+          }
+          activeTaskId = activeTask.id;
+        }
+
+        const nextTask = todayTasks[(currentTaskIndex + 1) % todayTasks.length];
+        const startSec = timeToSeconds(activeTask.start);
+        const endSec = timeToSeconds(activeTask.end);
+        
+        if (nowIconEl) nowIconEl.textContent = activeTask.icon;
+        if (nowTitleEl) nowTitleEl.textContent = activeTask.title;
+        if (nowTimeRangeEl) nowTimeRangeEl.textContent = `${format12Hour(activeTask.start)} - ${format12Hour(activeTask.end)}`;
+        if (nowDescEl) nowDescEl.textContent = activeTask.desc;
+
+        if (countdownTimerEl) countdownTimerEl.textContent = formatCountdown(endSec - nowSeconds);
+        const progressPercent = Math.min(100, Math.max(0, ((nowSeconds - startSec) / (endSec - startSec)) * 100));
+        if (progressFillEl) progressFillEl.style.width = `${progressPercent.toFixed(1)}%`;
+
+        if (nextTask) {
+          if (nextStartTimeEl) nextStartTimeEl.textContent = format12Hour(nextTask.start);
+          if (nextIconEl) nextIconEl.textContent = nextTask.icon;
+          if (nextTitleEl) nextTitleEl.textContent = nextTask.title;
+          if (nextDescEl) nextDescEl.textContent = nextTask.desc;
+        }
+      } else {
+        if (activeTaskId !== null) {
+          playRingtone('end');
+          activeTaskId = null;
+        }
+        if (nowIconEl) nowIconEl.textContent = '💤';
+        if (nowTitleEl) nowTitleEl.textContent = 'No Active Task';
+        if (nowTimeRangeEl) nowTimeRangeEl.textContent = '--:-- - --:--';
+        if (nowDescEl) nowDescEl.textContent = 'Free Time / Idle';
+        if (countdownTimerEl) countdownTimerEl.textContent = '00h 00m 00s';
+        if (progressFillEl) progressFillEl.style.width = '0%';
+      }
+    } catch (e) {}
+  }
+
+  /* ------------------- RINGTONE & AUDIO ENGINE ------------------- */
   function playRingtone(type) {
     if (!isAudioEnabled) return;
-
     const audioData = type === 'end' ? customEndAudio : customStartAudio;
-
     if (audioData) {
       const audio = new Audio(audioData);
       audio.play().catch(() => playSynthesizedChime(type));
@@ -189,12 +196,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(type === 'start' ? 587.33 : 440, audioCtx.currentTime); // D5 for start, A4 for end
+      osc.frequency.setValueAtTime(type === 'start' ? 587.33 : 440, audioCtx.currentTime);
       gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
-      
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
@@ -202,25 +207,45 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {}
   }
 
+  function updateSoundUI() {
+    if (toggleSoundStateBtn) toggleSoundStateBtn.textContent = `Sound: ${isAudioEnabled ? 'ENABLED' : 'DISABLED'}`;
+    if (audioIconEl) audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
+    if (endRingtoneStatus) endRingtoneStatus.textContent = customEndAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
+    if (startRingtoneStatus) startRingtoneStatus.textContent = customStartAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
+  }
+
   function initAudioControls() {
-    audioSettingsBtn.addEventListener('click', () => audioModal.classList.add('active'));
-    closeAudioModalBtn.addEventListener('click', () => audioModal.classList.remove('active'));
+    if (audioBtn) {
+      audioBtn.addEventListener('click', () => {
+        if (audioModal) audioModal.classList.add('active');
+        else {
+          isAudioEnabled = !isAudioEnabled;
+          localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
+          updateSoundUI();
+        }
+      });
+    }
+    if (closeAudioModalBtn) closeAudioModalBtn.addEventListener('click', () => audioModal.classList.remove('active'));
 
     updateSoundUI();
 
-    toggleSoundStateBtn.addEventListener('click', () => {
-      isAudioEnabled = !isAudioEnabled;
-      localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
-      updateSoundUI();
-    });
+    if (toggleSoundStateBtn) {
+      toggleSoundStateBtn.addEventListener('click', () => {
+        isAudioEnabled = !isAudioEnabled;
+        localStorage.setItem('schedule_audio_enabled', isAudioEnabled);
+        updateSoundUI();
+      });
+    }
 
-    endRingtoneInput.addEventListener('change', (e) => handleRingtoneUpload(e, 'end'));
-    startRingtoneInput.addEventListener('change', (e) => handleRingtoneUpload(e, 'start'));
+    if (endRingtoneInput) endRingtoneInput.addEventListener('change', (e) => handleRingtoneUpload(e, 'end'));
+    if (startRingtoneInput) startRingtoneInput.addEventListener('change', (e) => handleRingtoneUpload(e, 'start'));
 
-    testAudioBtn.addEventListener('click', () => {
-      playRingtone('end');
-      setTimeout(() => playRingtone('start'), 1500);
-    });
+    if (testAudioBtn) {
+      testAudioBtn.addEventListener('click', () => {
+        playRingtone('end');
+        setTimeout(() => playRingtone('start'), 1500);
+      });
+    }
   }
 
   function handleRingtoneUpload(e, type) {
@@ -242,56 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function updateSoundUI() {
-    toggleSoundStateBtn.textContent = `Sound: ${isAudioEnabled ? 'ENABLED' : 'DISABLED'}`;
-    audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
-    endRingtoneStatus.textContent = customEndAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
-    startRingtoneStatus.textContent = customStartAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
-  }
-
-  /* ------------------- TASK CREATION & TIMELINE ------------------- */
-  function initTaskModal() {
-    openAddTaskBtn.addEventListener('click', () => {
-      document.getElementById('task-day').value = selectedDay;
-      taskModal.classList.add('active');
-    });
-
-    closeTaskModalBtn.addEventListener('click', () => taskModal.classList.remove('active'));
-
-    taskForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const day = document.getElementById('task-day').value;
-      const newTask = {
-        id: `custom-${Date.now()}`,
-        start: document.getElementById('task-start').value,
-        end: document.getElementById('task-end').value,
-        title: document.getElementById('task-title').value,
-        category: document.getElementById('task-category').value,
-        icon: document.getElementById('task-icon').value,
-        desc: document.getElementById('task-desc').value || 'User Custom Task'
-      };
-
-      if (!userScheduleData[day]) userScheduleData[day] = [];
-      userScheduleData[day].push(newTask);
-      userScheduleData[day].sort((a, b) => timeToSeconds(a.start) - timeToSeconds(b.start));
-
-      saveUserSchedule();
-      taskForm.reset();
-      taskModal.classList.remove('active');
-    });
-  }
-
-  function deleteTask(dayKey, taskId) {
-    if (userScheduleData[dayKey]) {
-      userScheduleData[dayKey] = userScheduleData[dayKey].filter(t => t.id !== taskId);
-      saveUserSchedule();
-    }
-  }
-
+  /* ------------------- TIMELINE & TABS ------------------- */
   function renderTimeline(dayKey) {
+    if (!timelineListEl) return;
     const tasks = userScheduleData[dayKey] || [];
-    timelineTitleEl.textContent = `${capitalize(dayKey)} Routine`;
-    taskCountEl.textContent = `${tasks.length} Tasks`;
+    if (timelineTitleEl) timelineTitleEl.textContent = `${capitalize(dayKey)} Routine`;
+    if (taskCountEl) taskCountEl.textContent = `${tasks.length} Tasks`;
     timelineListEl.innerHTML = '';
 
     const targetDateStr = getDateStrForDayTab(dayKey);
@@ -326,43 +307,111 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      card.querySelector('.btn-done').addEventListener('click', () => setTaskStatus(task.id, 'completed', dayKey));
-      card.querySelector('.btn-missed').addEventListener('click', () => setTaskStatus(task.id, 'incomplete', dayKey));
-      card.querySelector('.btn-delete').addEventListener('click', () => deleteTask(dayKey, task.id));
+      const doneBtn = card.querySelector('.btn-done');
+      const missedBtn = card.querySelector('.btn-missed');
+      const deleteBtn = card.querySelector('.btn-delete');
+
+      if (doneBtn) doneBtn.addEventListener('click', () => setTaskStatus(task.id, 'completed', dayKey));
+      if (missedBtn) missedBtn.addEventListener('click', () => setTaskStatus(task.id, 'incomplete', dayKey));
+      if (deleteBtn) deleteBtn.addEventListener('click', () => deleteTask(dayKey, task.id));
 
       timelineListEl.appendChild(card);
     });
 
-    statDoneCountEl.textContent = done;
-    statMissedCountEl.textContent = missed;
-    statPendingCountEl.textContent = pending;
+    if (statDoneCountEl) statDoneCountEl.textContent = done;
+    if (statMissedCountEl) statMissedCountEl.textContent = missed;
+    if (statPendingCountEl) statPendingCountEl.textContent = pending;
   }
 
-  /* ------------------- HELPERS & MODALS ------------------- */
   function initTabs() {
     dayTabs.forEach(tab => {
+      const tabDay = tab.getAttribute('data-day');
+      if (tabDay === selectedDay) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+
       tab.addEventListener('click', () => {
         dayTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        selectedDay = tab.getAttribute('data-day');
+        selectedDay = tabDay;
         renderTimeline(selectedDay);
       });
     });
   }
 
+  function initTaskModal() {
+    if (openAddTaskBtn) {
+      openAddTaskBtn.addEventListener('click', () => {
+        const daySelect = getEl('task-day');
+        if (daySelect) daySelect.value = selectedDay;
+        if (taskModal) taskModal.classList.add('active');
+      });
+    }
+
+    if (closeTaskModalBtn) {
+      closeTaskModalBtn.addEventListener('click', () => {
+        if (taskModal) taskModal.classList.remove('active');
+      });
+    }
+
+    if (taskForm) {
+      taskForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const day = getEl('task-day') ? getEl('task-day').value : selectedDay;
+        const newTask = {
+          id: `custom-${Date.now()}`,
+          start: getEl('task-start').value,
+          end: getEl('task-end').value,
+          title: getEl('task-title').value,
+          category: getEl('task-category').value,
+          icon: getEl('task-icon').value || '⚡',
+          desc: getEl('task-desc').value || 'User Custom Task'
+        };
+
+        if (!userScheduleData[day]) userScheduleData[day] = [];
+        userScheduleData[day].push(newTask);
+        userScheduleData[day].sort((a, b) => timeToSeconds(a.start) - timeToSeconds(b.start));
+
+        saveUserSchedule();
+        taskForm.reset();
+        if (taskModal) taskModal.classList.remove('active');
+      });
+    }
+  }
+
+  function deleteTask(dayKey, taskId) {
+    if (userScheduleData[dayKey]) {
+      userScheduleData[dayKey] = userScheduleData[dayKey].filter(t => t.id !== taskId);
+      saveUserSchedule();
+    }
+  }
+
   function initHistoryModal() {
-    historyBtn.addEventListener('click', () => {
-      const today = getTodayDateStr();
-      historyDatePicker.value = today;
-      renderHistoryView(today);
-      historyModal.classList.add('active');
-    });
-    closeHistoryBtn.addEventListener('click', () => historyModal.classList.remove('active'));
-    historyDatePicker.addEventListener('change', (e) => renderHistoryView(e.target.value));
+    if (historyBtn) {
+      historyBtn.addEventListener('click', () => {
+        const today = getLocalDateStr();
+        if (historyDatePicker) historyDatePicker.value = today;
+        renderHistoryView(today);
+        if (historyModal) historyModal.classList.add('active');
+      });
+    }
+    if (closeHistoryBtn) {
+      closeHistoryBtn.addEventListener('click', () => {
+        if (historyModal) historyModal.classList.remove('active');
+      });
+    }
+    if (historyDatePicker) {
+      historyDatePicker.addEventListener('change', (e) => renderHistoryView(e.target.value));
+    }
   }
 
   function renderHistoryView(dateStr) {
-    const dayKey = DAYS_MAP[new Date(dateStr).getDay()];
+    if (!dateStr) return;
+    const parts = dateStr.split('-');
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+    const dayKey = DAYS_MAP[dateObj.getDay()];
     const tasks = userScheduleData[dayKey] || [];
     let done = 0, missed = 0, pending = 0;
 
@@ -374,17 +423,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return `<div class="task-card"><div class="task-title">${t.title} (${status.toUpperCase()})</div></div>`;
     });
 
-    historyStatsCard.innerHTML = `<div>Done: ${done}</div><div>Missed: ${missed}</div><div>Pending: ${pending}</div>`;
-    historyTaskList.innerHTML = rows.join('');
-  }
-
-  function getCurrentDayKey() { return DAYS_MAP[new Date().getDay()]; }
-  function getTodayDateStr() { return new Date().toISOString().split('T')[0]; }
-  function getDateStrForDayTab(tabKey) {
-    const now = new Date();
-    const diff = DAYS_MAP.indexOf(tabKey) - now.getDay();
-    const target = new Date(now.setDate(now.getDate() + diff));
-    return target.toISOString().split('T')[0];
+    if (historyStatsCard) historyStatsCard.innerHTML = `<div>Done: ${done}</div><div>Missed: ${missed}</div><div>Pending: ${pending}</div>`;
+    if (historyTaskList) historyTaskList.innerHTML = rows.join('');
   }
 
   function getTaskStatus(taskId, dateStr) { return localStorage.getItem(`status_${dateStr}_${taskId}`) || 'pending'; }
@@ -396,13 +436,20 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTimeline(dayKey);
   }
 
-  function timeToSeconds(str) { const [h, m] = str.split(':').map(Number); return h * 3600 + m * 60; }
+  function timeToSeconds(str) {
+    if (!str) return 0;
+    const [h, m] = str.split(':').map(Number);
+    return h * 3600 + m * 60;
+  }
+
   function format12Hour(str) {
+    if (!str) return '--:--';
     let [h, m] = str.split(':').map(Number);
     const ampm = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
-    return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
   }
+
   function formatCountdown(sec) {
     if (sec <= 0) return '00h 00m 00s';
     const h = Math.floor(sec / 3600);
@@ -410,5 +457,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const s = sec % 60;
     return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
   }
-  function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+
+  function capitalize(str) { if (!str) return ''; return str.charAt(0).toUpperCase() + str.slice(1); }
+
+  // Start Engine Loops & Listeners
+  updateEngine();
+  setInterval(updateEngine, 1000);
+  initAudioControls();
+  initTabs();
+  initTaskModal();
+  initHistoryModal();
+  renderTimeline(selectedDay);
 });
