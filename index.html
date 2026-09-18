@@ -146,30 +146,46 @@
     </div>
   </div>
 
-  <!-- Audio Settings Modal -->
-  <div id="audio-modal" class="modal-overlay">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h2>🔔 Sound & Alert Ringtones</h2>
-        <button class="close-btn" id="close-audio-modal">✕</button>
-      </div>
-      <div class="form-group">
-        <label>Audio Notifications</label>
-        <button class="btn-primary" id="toggle-sound-state" style="width: 100%;">Sound: ENABLED</button>
-      </div>
-      <div class="form-group" style="margin-top: 10px;">
-        <label>Task Ended Alert Ringtone</label>
-        <input type="file" id="end-ringtone-input" accept="audio/*" class="form-control">
-        <span style="font-size: 0.7rem; color: #94a3b8;" id="end-ringtone-status">Default Chime Active</span>
-      </div>
-      <div class="form-group" style="margin-top: 10px;">
-        <label>Task Started Alert Ringtone</label>
-        <input type="file" id="start-ringtone-input" accept="audio/*" class="form-control">
-        <span style="font-size: 0.7rem; color: #94a3b8;" id="start-ringtone-status">Default Chime Active</span>
-      </div>
-      <button class="action-btn" id="test-audio-btn" style="margin-top: 12px; width: 100%;">🔊 Test Alert Sounds</button>
+  <!-- Audio & Ringtone Settings Modal -->
+<div id="audio-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>🔔 Alert Sounds & Ringtones</h2>
+      <button class="close-btn" id="close-audio-modal">✕</button>
     </div>
+    
+    <div class="form-group">
+      <label>Notifications State</label>
+      <button class="btn-primary" id="toggle-sound-state" style="width: 100%;">Sound: ENABLED</button>
+    </div>
+
+    <!-- Task Ended Ringtone Selector -->
+    <div class="form-group" style="margin-top: 14px;">
+      <label>Task Completed Tone</label>
+      <div class="custom-file-container">
+        <label for="end-ringtone-input" class="cool-upload-btn">
+          <span>🎵 Select Finish Ringtone</span>
+        </label>
+        <input type="file" id="end-ringtone-input" accept="audio/mpeg, audio/mp3, audio/wav, audio/aac, audio/ogg, .mp3, .wav, .m4a, .aac, .ogg" class="hidden-file-input">
+      </div>
+      <span class="ringtone-badge" id="end-ringtone-status">✨ Default Chime Active</span>
+    </div>
+
+    <!-- Task Started Ringtone Selector -->
+    <div class="form-group" style="margin-top: 14px;">
+      <label>Next Task Start Tone</label>
+      <div class="custom-file-container">
+        <label for="start-ringtone-input" class="cool-upload-btn">
+          <span>🎶 Select Start Ringtone</span>
+        </label>
+        <input type="file" id="start-ringtone-input" accept="audio/mpeg, audio/mp3, audio/wav, audio/aac, audio/ogg, .mp3, .wav, .m4a, .aac, .ogg" class="hidden-file-input">
+      </div>
+      <span class="ringtone-badge" id="start-ringtone-status">✨ Default Chime Active</span>
+    </div>
+
+    <button class="action-btn" id="test-audio-btn" style="margin-top: 16px; width: 100%;">🔊 Test Alert Sounds</button>
   </div>
+</div>
 
   <!-- History Vault Modal -->
   <div id="history-modal" class="modal-overlay">

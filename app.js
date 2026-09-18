@@ -257,13 +257,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (type === 'end') {
           customEndAudio = base64Audio;
           localStorage.setItem('custom_end_ringtone', base64Audio);
+          localStorage.setItem('custom_end_ringtone_name', file.name);
         } else {
           customStartAudio = base64Audio;
           localStorage.setItem('custom_start_ringtone', base64Audio);
+          localStorage.setItem('custom_start_ringtone_name', file.name);
         }
         updateSoundUI();
       };
       reader.readAsDataURL(file);
+    }
+  }
+
+  function updateSoundUI() {
+    if (toggleSoundStateBtn) toggleSoundStateBtn.textContent = `Sound: ${isAudioEnabled ? 'ENABLED' : 'DISABLED'}`;
+    if (audioIconEl) audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
+    
+    const endName = localStorage.getItem('custom_end_ringtone_name');
+    const startName = localStorage.getItem('custom_start_ringtone_name');
+
+    if (endRingtoneStatus) {
+      endRingtoneStatus.textContent = customEndAudio 
+        ? `🎵 Loaded: ${endName || 'Custom Ringtone'}` 
+        : '✨ Default Chime Active';
+    }
+    
+    if (startRingtoneStatus) {
+      startRingtoneStatus.textContent = customStartAudio 
+        ? `🎶 Loaded: ${startName || 'Custom Ringtone'}` 
+        : '✨ Default Chime Active';
     }
   }
 
