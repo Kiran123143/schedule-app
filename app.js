@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateEngine();
   }
 
-  // Local Timezone Helpers (Avoids UTC Shift Bugs)
+  // Local Timezone Helpers
   function getLocalDateStr(d = new Date()) {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -210,8 +210,52 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateSoundUI() {
     if (toggleSoundStateBtn) toggleSoundStateBtn.textContent = `Sound: ${isAudioEnabled ? 'ENABLED' : 'DISABLED'}`;
     if (audioIconEl) audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
-    if (endRingtoneStatus) endRingtoneStatus.textContent = customEndAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
-    if (startRingtoneStatus) startRingtoneStatus.textContent = customStartAudio ? 'Custom Phone Ringtone Loaded ✓' : 'Default Chime Active';
+    
+    const endName = localStorage.getItem('custom_end_ringtone_name');
+    const startName = localStorage.getItem('custom_start_ringtone_name');
+
+    if (endRingtoneStatus) {
+      endRingtoneStatus.textContent = customEndAudio 
+        ? `🎵 Loaded: ${endName || 'Custom Ringtone'}` 
+        : '✨ Default Chime Active';
+    }
+    
+    if (startRingtoneStatus) {
+      startRingtoneStatus.textContent = customStartAudio 
+        ? `🎶 Loaded: ${startName || 'Custom Ringtone'}` 
+        : '✨ Default Chime Active';
+    }
+  }
+
+  function handleRingtoneUpload(e, type) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      alert('File is too large. Please select an audio file under 3MB.');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Audio = event.target.result;
+      try {
+        if (type === 'end') {
+          customEndAudio = base64Audio;
+          localStorage.setItem('custom_end_ringtone', base64Audio);
+          localStorage.setItem('custom_end_ringtone_name', file.name);
+        } else {
+          customStartAudio = base64Audio;
+          localStorage.setItem('custom_start_ringtone', base64Audio);
+          localStorage.setItem('custom_start_ringtone_name', file.name);
+        }
+        updateSoundUI();
+      } catch (err) {
+        alert('Storage quota exceeded. Please choose a smaller audio file.');
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   function initAudioControls() {
@@ -245,47 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
         playRingtone('end');
         setTimeout(() => playRingtone('start'), 1500);
       });
-    }
-  }
-
-  function handleRingtoneUpload(e, type) {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64Audio = event.target.result;
-        if (type === 'end') {
-          customEndAudio = base64Audio;
-          localStorage.setItem('custom_end_ringtone', base64Audio);
-          localStorage.setItem('custom_end_ringtone_name', file.name);
-        } else {
-          customStartAudio = base64Audio;
-          localStorage.setItem('custom_start_ringtone', base64Audio);
-          localStorage.setItem('custom_start_ringtone_name', file.name);
-        }
-        updateSoundUI();
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  function updateSoundUI() {
-    if (toggleSoundStateBtn) toggleSoundStateBtn.textContent = `Sound: ${isAudioEnabled ? 'ENABLED' : 'DISABLED'}`;
-    if (audioIconEl) audioIconEl.textContent = isAudioEnabled ? '🔔' : '🔇';
-    
-    const endName = localStorage.getItem('custom_end_ringtone_name');
-    const startName = localStorage.getItem('custom_start_ringtone_name');
-
-    if (endRingtoneStatus) {
-      endRingtoneStatus.textContent = customEndAudio 
-        ? `🎵 Loaded: ${endName || 'Custom Ringtone'}` 
-        : '✨ Default Chime Active';
-    }
-    
-    if (startRingtoneStatus) {
-      startRingtoneStatus.textContent = customStartAudio 
-        ? `🎶 Loaded: ${startName || 'Custom Ringtone'}` 
-        : '✨ Default Chime Active';
     }
   }
 
